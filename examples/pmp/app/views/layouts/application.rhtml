@@ -1,0 +1,56 @@
+<html>
+<head>
+<title>
+Project Manager Plus
+</title>
+</head>
+<body>
+
+<table>
+<tr>
+<td>
+</td>
+<td>
+<h1>Project Manager Plus</h1>
+ (<%= link_to "Home Page", {:controller => "projects", :action => "home" } %>)
+<hr>
+</td>
+</tr>
+<tr>
+
+   <td width="300" >
+      <%= link_to "Home Page", {:controller => "projects", :action => "home" } %>
+      <br>
+      <%= link_to "All Projects", {:controller => "projects", :action => "all_projects" } %>
+      <br>
+      <%= link_to "My Open Projects", {:controller => "projects", :action => "my_open_projects" } %>
+      <br>
+      <%= link_to "Open Projects", {:controller => "projects", :action => "open_projects" } %>
+      <br>
+      <%= link_to "Projects Sorted By Company", {:controller => "projects", :action => "project_sorted_by_company" } %>
+      <br>
+      <%= link_to "Projects Sorted By Priority", {:controller => "projects", :action => "projects_sorted_by_priority" } %>
+      <br>
+      <%= link_to "All Tasks", {:controller => "tasks", :action => "all_tasks" } %>
+      <br>
+      <%= link_to "Task search 1", {:controller => "tasks", :action => "search", :s => "test" } %>
+      <br>
+      <%= link_to "Task search 2", {:controller => "tasks", :action => "search2", :status => "Completed" } %>
+      <br>
+      <%= link_to "Task search 3", {:controller => "tasks", :action => "search3", :status => "Completed" } %>
+      <br>
+      <%= link_to "Issues starting with 'S'", {:controller => "issues", :action => "filter_issues", :s => "S.+" } %>
+      <br>
+      <%= link_to "Projects+Contacts", {:controller => "contacts", :action => "project_contacts" } %>
+      <br>
+      <%= link_to "Companies", {:controller => "contacts", :action => "companies" } %>
+      <br>
+      <%= link_to "Time Cards", {:controller => "time_cards", :action => "summary" } %>
+   </td>
+
+   <td>
+      <%= yield :layout %>
+   </td>
+
+</body>
+</html>

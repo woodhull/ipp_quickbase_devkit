@@ -1,0 +1,1896 @@
+
+<html>
+<head>
+<title>
+QuickBaseClient.rb:  A Ruby language wrapper for the QuickBase HTTP API
+</title>
+</head>
+<body>
+
+<font face="Arial">
+<br>
+<br>
+
+<h2><a href="QuickBaseClient.rb">QuickBaseClient.rb</a>:  A Ruby language wrapper for the QuickBase HTTP API</h2>
+
+This document explains what <a href="QuickBaseClient.rb">QuickBaseClient.rb</a> is and the kinds of tasks it is suited for, and provides examples of how to accomplish those tasks.
+The 2/13/2006 version of this document can be considered about 3/4trs complete;  some sections are obviously waiting to be filled in and a couple more sections need to be added.
+
+<h3>What is <a href="QuickBaseClient.rb">QuickBaseClient.rb</a>?</h3>
+
+<a href="QuickBaseClient.rb">QuickBaseClient.rb</a> is collection of routines written in the Ruby programming language that enable developers to create, modify and query QuickBase applications using the Ruby language.  The core routines closely mimic the 'API_' items described in the <a href="https://www.quickbase.com/up/6mztyxu8/g/rc7/en/va/QuickBaseAPI.htm">QuickBase HTTP API Reference document</a>.  Additional 'helper' routines are included that reduce the amount of code developers must write to accomplish common tasks.
+<p>
+Also included in <a href="QuickBaseClient.rb">QuickBaseClient.rb</a> is a simple utility that allows users to type commands at a prompt to access and manipulate QuickBase applications.  Commands may be recorded into files and 'replayed' later. <a href="QuickBaseClient.rb">QuickBaseClient.rb</a> contains a tiny web server that can 'replay' command files specified in a browser Address box or in a link in a web page.
+</p>
+
+<h3>Who is responsible for <a href="QuickBaseClient.rb">QuickBaseClient.rb</a>?</h3>
+
+<a href="QuickBaseClient.rb">QuickBaseClient.rb</a> was created by Gareth Lewis who is an Intuit employee but isn't a member of the QuickBase team. It is currently maintained by Gareth outside his normal work hours.
+
+<h3>Who should use <a href="QuickBaseClient.rb">QuickBaseClient.rb</a>?</h3>
+<ol>
+<li>People responsible for maintaining or enhancing QuickBase applications, especially people with programming experience.
+<li>Software developers who want to include QuickBase in the 'back end' for applications.
+<li>Non-programmers who use small programs written for them may find it straightforward to make minor changes to the programs that
+use <a href="QuickBaseClient.rb">QuickBaseClient.rb</a>.
+<li>Any QuickBase user willing to learn the commands available in the 'CommandLineClient' utility in <a href="QuickBaseClient.rb">QuickBaseClient.rb</a>.
+</ol>
+
+<h3>What kinds of things can <a href="QuickBaseClient.rb">QuickBaseClient.rb</a> be used for?</h3>
+
+<ol>
+<li>Creating large numbers of records that vary slightly. An example is creating a record for every day
+between two dates entered by the user.
+<li>Modifying fields in a large numbers of records, especially when 'search and replace' is insufficient. An example is to prepend 'Mr. ' to a 'Name' field
+if a 'Male' box is checked.
+<li>Setting fields based on data in multiple other records or tables. For example, a field could total the number of records in a 
+table specifed by the user that contain a value specified by the user.
+<li>Creating records automatically at specified times or when certain events occur, such as when a computer is turned on, after a 
+particular user enters a record in another database or clicks a link field in a QuickBase record, or to make QuickBase send an email every hour until a certain time. 
+<li>Transforming records into useful formats not directly supported by QuickBase, such as RSS, PDF or JSON files, and storing them in QuickBase.
+<li>Typing a single command instead of going through a series of steps to accomplish a daily task. For example, uploading the latest copy
+of a spreadsheet into particular database record by typing 'upf'.
+<li>Integrating QuickBase with other applications, including applications not written in Ruby. An example might be an instant messenger written
+in C# that saves instant message sessions in QuickBase.  Another example is to update a stock price field in QuickBase by reading
+it from another website.  
+<li>Emailing data from QuickBase using your own 'From:' email address.
+<li>Triggering any of the above by clicking a link in any web page or by typing the link into a browser Address box.
+For example, clicking a link in a QuickBase record could upload the latest copy of a file from another user's computer into a different QuickBase table.
+</ol>
+
+<p>
+Like the Java, Perl and Visual Basic SDKs for QuickBase, <a href="QuickBaseClient.rb">QuickBaseClient.rb</a> is limited by the amount of functionality that
+QuickBase allows external programs to access via its HTTP API.  Like those SDK languages, Ruby is a full-fledged programming 
+language with unlimited ability to create and transform data and present it in different formats.  The 'sweet spot' for
+these SDKs and <a href="QuickBaseClient.rb">QuickBaseClient.rb</a> is small applications and utilities that are straightforward to create, integrate with 
+QuickBase and other applications, and manipulate QuickBase data in ways that are difficult to accomplish through the QuickBase UI.
+Ruby's particular sweet spot is similar to Perl's: utilities with limited UI requirements that automate tedious
+data manipulation tasks or that link applications together.  Ruby owes a lot to Perl, but its Smalltalk heritage makes
+Ruby a conceptually (and visually!) cleaner language and especially pleasant to work in. 
+
+
+<h3>What should <a href="QuickBaseClient.rb">QuickBaseClient.rb</a> <i>not</i> be used for?</h3>
+<ol>
+<li>Anything that is much easier to do 'manually' in the browser.
+</ol>
+
+<h3>What is required to get started with <a href="QuickBaseClient.rb">QuickBaseClient.rb</a>?</h3>
+<ol>
+<li>The Ruby language interpreter.  There is a great <a href="http://rubyinstaller.rubyforge.org/wiki/wiki.pl">One-click Ruby installer for Windows</a>. 
+For other operating systems, go to the <a href="http://www.ruby-lang.org/en/">Ruby homepage</a>
+<li>Access to <a href="http://www.quickbase.com">QuickBase</a> (of course!).
+<li>The <a href="QuickBaseClient.rb">QuickBaseClient.rb</a> file.
+<li><a href="QuickBaseClient.rb">QuickBaseClient.rb</a> will make a lot more sense once you've read the <a href="https://www.quickbase.com/up/6mztyxu8/g/rc7/en/va/QuickBaseAPI.htm">QuickBase HTTP API Reference document</a>.
+<li>If you are new to Ruby, the best book to read is <a href="http://pragmaticprogrammer.com/titles/ruby/index.html">Programming Ruby</a>.  The first edition
+of the book is <a href="http://www.rubycentral.com/book/index.html">free online</a> and is also installed as part of the <a href="http://rubyinstaller.rubyforge.org/wiki/wiki.pl">One-click Ruby installer for Windows</a>.
+<li>Any text editor can be used to write Ruby programs, but the (free!) Scite editor installed with the <a href="http://rubyinstaller.rubyforge.org/wiki/wiki.pl">One-click Ruby installer for Windows</a> has
+good support for editing and running Ruby programs, and the ActiveState Komodo product is likely to be very good.
+</ol>
+<p>
+Please remember that it's always a good idea to back up important data before trying out any program or utility that modifies the data.
+In QuickBase, an application can be copied using the <b>Go To</b> menu, selecting Miscellaneous, then 'Copy with Data'.  It is also possible to
+copy applications using this Ruby wrapper.
+
+<h3>A simple Ruby program that uses <a href="QuickBaseClient.rb">QuickBaseClient.rb</a></h3>
+
+<font color="blue">
+<pre>
+require 'QuickBaseClient'
+qbc = QuickBase::Client.new( "my_username", "my_password", "My QuickBase Database" )
+qbc.makeSVFile( "MyCSVFile.csv" )
+qbc.signOut
+</pre>
+</font>
+<font color="black">
+
+<h3>A command file that achieves the same results</h3>
+
+<font color="blue">
+<pre>
+signin my_username my_password
+open My QuickBase Database
+exportfile MyCSVFile.csv
+quit
+</pre>
+</font>
+<font color="black">
+
+<h3>An explanation of the program and the command file</h3>
+
+<b>The program:</b>
+<br>
+<br>
+<font color="blue">
+require 'QuickBaseClient'
+</font>
+<font color="black">
+<br>
+This line tells Ruby to find <a href="QuickBaseClient.rb">QuickBaseClient.rb</a> and make its contents available for this program.
+<br>
+<br>
+ 
+<font color="blue">
+qbc = QuickBase::Client.new( "my_username", "my_password", "My QuickBase Database" )
+</font>
+<font color="black">
+<br>
+This line signs into QuickBase using the specified user name and password using the QuickBase API_Authenticate call, and finds the application
+named "My QuickBase Database" using the API_FindDBbyName call.  If the username and password are valid, subsequent requests to QuickBase 
+include a 'ticket' instead of the username and password. QuickBase::Client keeps the ticket in its @ticket 
+variable. The active QuickBase application or table has an id, which you can see in your browser's Address box when a 
+QuickBase application is open.  QuickBase::Client keeps this id in @dbid so that it doesn't have to be specified
+for every request to the active table. 
+<br>
+
+<br>
+<br>
+<font color="blue">
+qbc.makeSVFile( "MyCSVFile.csv" )
+</font>
+<font color="black">
+<br>
+This line runs a query to retrieve all the records and fields from "My QuickBase Database" and write
+the results to a CSV (comma-separated values) file called MyCSVFile.csv.  The field names are 
+written on the first line of the file.  Fields that contain a comma are surrounded by quotes. To change the
+field separator from a comma to something else, a second parameter can be supplied, e.g. <font color="blue">qbc.makeSVFile( "MyTSVFile.txt", "\t" )</font>
+will create a TAB-delimited file.
+<font color="black">
+
+<br>
+<br>
+<font color="blue">
+qbc.signOut
+</font>
+<font color="black">
+<br>
+This line signs out of QuickBase.
+<br>
+<br>
+<b>The command file:</b>
+<br>
+<br>
+<font color="blue">
+signin my_username my_password
+</font>
+<font color="black">
+<br>
+This line signs into QuickBase as the user "my_username", with the password "my_password".
+
+<br>
+<br>
+<font color="blue">
+open My QuickBase Database
+</font>
+<font color="black">
+<br>
+This line makes "My QuickBase Database" the active application.
+
+<br>
+<br>
+<font color="blue">
+exportfile MyCSVFile.csv
+</font>
+<font color="black">
+
+<br>
+This line queries all the records and fields from "My QuickBase Database" 
+and writes the results to MyCSVFile.csv.
+
+
+<br>
+<br>
+<font color="blue">
+quit
+</font>
+<font color="black">
+
+<br>
+This line automatically signs out QuickBase then ends the command session.
+
+<h3>Running the program and the command file</h3>
+<b>To run the program:-</b>
+<ol>
+<li>
+Open the <a href="qbc.makeCSVFile.rb">qbc.makeCSVFile.rb</a> file.
+<li>Change the username, password, application name to something valid that you can access.
+<li>Change 'MyCSVFile.csv' to another file name, if you prefer.
+<li>At the operating system prompt, type <font color="blue">ruby qbc.makeCSVFile.rb</font><font color="black">.
+</ol>
+
+<b>To run the command file:-</b>
+<ol>
+<li>
+Open the <a href="qbc.makeCSVFile.qbc">qbc.makeCSVFile.qbc</a> file.
+<li>Change the username, password, application name to something valid that you can access.
+<li>Change 'MyCSVFile.csv' to another file name, if you prefer.
+<li>At the operating system prompt, type <font color="blue">ruby <a href="QuickBaseClient.rb">QuickBaseClient.rb</a> run qbc.makeCSVFile.qbc</font><font color="black">.
+</ol>
+
+<h2>Running an interactive command session</h2>
+To run an interactive command session:-
+<ol>
+<li>Open the operating system prompt window
+<li>Change to the folder containing the file <a href="QuickBaseClient.rb">QuickBaseClient.rb</a>
+<li>Type <font color="blue">ruby <a href="QuickBaseClient.rb">QuickBaseClient.rb</a> run</font><font color="black"> at the operating system prompt.
+</ol>
+You should see 
+<br>
+<font color="blue">
+<pre>
+ Enter a command from the list of available commands.
+ The list of commands may change after each command.
+ Type TABs, commas, or spaces between parts of a command.
+ Use double-quotes if your commands contain TABs, commas or spaces.
+
+ e.g. addfield "my text field" text
+
+
+Commands available:
+
+ quit(q): End this command session
+ usage: Show how to use this program
+ ruby 'rubycode': run a line of ruby language code
+ run(r) 'filename': run the commands in a file
+ record 'filename': records your commands in a file
+ signin(si) 'username,password': Sign into QuickBase
+ uselog(ul) 'log file': Logs requests and responses to a file
+
+Enter a command:
+</pre>
+<br>
+<font color="black">
+You will most likely want to run 'signin username password' as the next command.
+After that, you will see:-
+<font color="blue">
+<pre>
+Commands available:
+
+ quit(q): End this command session
+ usage: Show how to use this program
+ ruby 'rubycode': run a line of ruby language code
+ run(r) 'filename': run the commands in a file
+ record 'filename': records your commands in a file
+ create 'application name,description': Create an application
+ listapps(la) : Lists the applications you can access
+ open(o) 'application name': Open an application
+ print(p) : Prints the results of the last command
+ signout(so) : Sign out of QuickBase
+ uselog(ul) 'log file': Logs requests and responses to a file
+
+Enter a command:
+</pre>
+<font color="black">
+You will most likely want to run 'signin username password' as the next command.
+After that, you will see:-
+<font color="blue">
+<pre>
+Commands available:
+
+ quit(q): End this command session
+ usage: Show how to use this program
+ ruby 'rubycode': run a line of ruby language code
+ run(r) 'filename': run the commands in a file
+ record 'filename': records your commands in a file
+ addfield(af) 'field name,field type': Add a field to the active table
+ addfieldchoices 'field name,[choice1,choice2]': Add value choices for a field
+ addrecord(ar) : Add a record to the active table
+ changerecords 'field,value,testfld,test,testval': Conditionally set field value
+ copy 'name,desc,keep data?': Copy an application, with/out data
+ create 'application name,description': Create an application
+ deleteallrecords : Delete all records
+ deletefield 'field name': Delete a field from the active table
+ deleterecords 'test field,test,test value': Conditionally delete records
+ deletetable : Delete the active table
+ exportfile(ef) 'file name': Export records to a CSV file
+ importfile(if) 'file name': Import records from a CSV file
+ listapps(la) : Lists the applications you can access
+ open(o) 'application name': Open an application
+ print(p) : Prints the results of the last command
+ select(sel) 'query name': Select records using a query name
+ signout(so) : Sign out of QuickBase
+ uploadfile(ulf) 'file name,file attachment field name': Upload a file into a new record
+ uselog(ul) 'log file': Logs requests and responses to a file
+
+Enter a command:
+</pre>
+<font color="black">
+
+When a particular record is 'active', the 'setfield' and 'updatefile' commands are added to
+the above list.  
+<p>
+For Ruby programmers: in addition to the above commands, any method in QuickBase::Client can be 
+also be run as a command. e.g. typing <font color="blue">_getRecordInfo &quot;1&quot;</font><font color="black"> will get the details of the record from
+the active table that has the Record ID# of &quot;1&quot;.  The same results can be obtained by typing
+<font color="blue">ruby _getRecordInfo( &quot;1&quot; )</font><font color="black"> .
+
+<font color="black">
+
+
+<h2>Running a command file from a browser Address box or a link in a web page</h2>
+<ol>
+<li>At a prompt, type <font color="blue">ruby <a href="QuickBaseClient.rb">QuickBaseClient.rb</a> runwebclient</font><font color="black"> 
+<li>Open a browser and type <font color="blue">http://127.0.0.1:2358/qbc/qbc.makeCSVFile.qbc</font><font color="black"> into the Address box.
+</ol>
+"127.0.0.1" tells a browser to look on the user's own machine for a web server.  This means that people on different computers 
+would all have to have QuickBaseClient.rb and qbc.makeCSVFile.qbc on their computer, and qbc.makeCSVFile.qbc <i>could</i> do different
+things for each user.  It is more likely that everyone will expect the same behavior when a specific URL is entered or clicked,
+and that most people will not have QuickBaseClient.rb or Ruby on their computer. To run command files that are on a particular machine:-
+<ol>
+<li>Find out the IP address or web-accessible name of the machine.
+<li>On that machine, type <font color="blue">ruby <a href="QuickBaseClient.rb">QuickBaseClient.rb</a> runwebclient &lt;IP Address&gt;</font><font color="black">
+<li>In the browser Address box or web page link, use <font color="blue">http://&lt;IP Address&gt;:2358/qbc/qbc.makeCSVFile.qbc</font><font color="black">.
+</ol>
+
+<h2><a href="QuickBaseClient.rb">QuickBaseClient.rb</a> Cookbook: Small programs for common tasks</h2>
+<p>
+You can find these examples and more in the <a href="https://www.quickbase.com/db/bbtt9cjr7?a=dr&r=ka&rl=5ea">QuickBase API Cookbook</a> <a href="https://www.quickbase.com/db/bcdcajmrf">(Latest 'read-only' version)</a>.
+</p>
+<p>
+Note that all the examples below can also be run by typing each line in an interactive command session.
+For the <b>Program</b> versions, simply type <font color="blue">ruby </font><font color="black"> at the beginning of each line.
+</p>
+
+<comment> -------------------------------------------------------------------------</comment>
+<table border="1">
+<tr>
+<td>
+<h3><center>Uploading a document into a new record</center></h3>
+</td>
+</tr>
+<tr>
+<td>
+<center><b>Program</b></center>
+</td>
+<td>
+<center><b>Command File</b></center>
+</td>
+</tr>
+<tr>
+<td>
+<font color="blue">
+require 'QuickBaseClient'
+<br>qbc = QuickBase::Client.new( "my_username", "my_password", "my_application" )
+<font color="green">
+<br># "Documents" is a table in "my_application"
+<br># "Author" and "Desc" are additional field values to set in the record 
+</font><font color="blue">
+<br>qbc.lookupChdbid( "Documents" )
+<br>qbc.uploadFile( qbc.dbid, "my_file.doc", "Document", { "Author" => "my_name", "Desc" => "Latest revision" } )
+<br>qbc.signOut
+</font><font color="black">
+</td>
+<td>
+<font color="blue">
+si my_username my_password
+<br>o my_application
+<br>use Documents
+<br>ulf my_file.doc Document
+<br>so
+</font><font color="black">
+</td>
+</tr>
+</table>
+
+<comment> -------------------------------------------------------------------------</comment>
+<p>
+<table border="1">
+<tr>
+<td>
+<h3><center>Updating a document in an existing record</center></h3>
+</td>
+</tr>
+<tr>
+<td>
+<center><b>Program</b></center>
+</td>
+<td>
+<center><b>Command File</b></center>
+</td>
+</tr>
+<tr>
+<td>
+<font color="blue">
+require 'QuickBaseClient'
+<br>qbc = QuickBase::Client.new( "my_username", "my_password", "my_application" )
+<br>qbc.lookupChdbid( "Documents" )
+<font color="green">
+<br># "12" is the number of the record (Record ID#) to be modified
+<br># "Document" is the name of the field containing a file attachment
+<br># "Version" and "Date" are additional field values to modify in the record 
+</font><font color="blue">
+<br>qbc.updateFile( qbc.dbid, "12", "my_file.doc", "Document", { "Version" => "6", "Note" => "Updated 01/30/2006" } )
+<br>qbc.signOut
+</font><font color="black">
+</td>
+<td>
+<font color="blue">
+si my_username my_password
+<br>o my_application
+<br>use Documents
+<br>udf my_file.doc Document
+<br>so
+</font><font color="black">
+</td>
+</tr>
+</table>
+
+<comment> -------------------------------------------------------------------------</comment>
+<p>
+<table border="1">
+<tr>
+<td>
+<h3><center>Making a backup copy of an application</center></h3>
+</td>
+</tr>
+<tr>
+<td>
+<center><b>Program</b></center>
+</td>
+<td>
+<center><b>Command File</b></center>
+</td>
+</tr>
+<tr>
+<td>
+<font color="blue">
+require 'QuickBaseClient'
+<br>qbc = QuickBase::Client.new( "my_username", "my_password", "my_application" )
+<font color="green">
+<br># "true" at the end means copy all the data, not just the structure of the database
+</font><font color="blue">
+<br>qbc.cloneDatabase( qbc.dbid, "my_application_backup", "backup of my_application", true )
+<br>qbc.signOut
+</font><font color="black">
+</td>
+<td>
+<font color="blue">
+si my_username my_password
+<br>o my_application
+<br>copy my_application_backup "backup of my_application"
+<br>so
+</font><font color="black">
+</td>
+</tr>
+</table>
+
+<comment> -------------------------------------------------------------------------</comment>
+<p>
+<table border="1">
+<tr>
+<td>
+<h3><center>Deleting all the records that meet a certain condition</center></h3>
+</td>
+</tr>
+<tr>
+<td>
+<center><b>Program</b></center>
+</td>
+<td>
+<center><b>Command File</b></center>
+</td>
+</tr>
+<tr>
+<td>
+<font color="blue">
+require 'QuickBaseClient'
+<br>qbc = QuickBase::Client.new( "my_username", "my_password", "my_application" )
+<font color="green">
+<br># delete all records with a "Status" field value equal to "closed"
+</font><font color="blue">
+<br>qbc.deleteRecords(  "Status", "==", "closed" )
+<br>qbc.signOut
+</font><font color="black">
+</td>
+<td>
+<font color="blue">
+si my_username my_password
+<br>o my_application
+<br>deleterecords Status == closed
+<br>so
+</font><font color="black">
+</td>
+</tr>
+</table>
+
+<comment> -------------------------------------------------------------------------</comment>
+<p>
+<table border="1">
+<tr>
+<td>
+<h3><center>Modifying all the records that meet a certain condition</center></h3>
+</td>
+</tr>
+<tr>
+<td>
+<center><b>Program</b></center>
+</td>
+<td>
+<center><b>Command File</b></center>
+</td>
+</tr>
+<tr>
+<td>
+<font color="blue">
+require 'QuickBaseClient'
+<br>qbc = QuickBase::Client.new( "my_username", "my_password", "my_application" )
+<font color="green">
+<br># set the checkbox field "Inactive" to "true" in all records with a "Status" field value equal to "closed"
+</font><font color="blue">
+<br>qbc.changeRecords(  "Inactive", "true", "Status", "==", "closed" )
+<br>qbc.signOut
+</font><font color="black">
+</td>
+<td>
+<font color="blue">
+si my_username my_password
+<br>o my_application
+<br>changerecords Inactive true Status == closed
+<br>so
+</font><font color="black">
+</td>
+</tr>
+</table>
+
+<comment> -------------------------------------------------------------------------</comment>
+<p>
+<table border="1">
+<tr>
+<td>
+<h3><center>Making the records in a table match the contents of a CSV file</center></h3>
+</td>
+</tr>
+<tr>
+<td>
+<center><b>Program</b></center>
+</td>
+<td>
+<center><b>Command File</b></center>
+</td>
+</tr>
+<tr>
+<td>
+<font color="blue">
+require 'QuickBaseClient'
+<br>qbc = QuickBase::Client.new( "my_username", "my_password", "my_application" )
+<br>qbc.lookupChdbid( "Imported data" )
+<font color="green">
+<br># delete all the records in the "Imported data" table then 
+<br># import new data from a CSV file.  The field names must be at the top of the file.
+</font><font color="blue">
+<br>qbc._purgeRecords
+<br>qbc.importCSVFile( "ImportedData.csv" )
+<br>qbc.signOut
+</font><font color="black">
+</td>
+<td>
+<font color="blue">
+si my_username my_password
+<br>o my_application
+<br>use Imported Data
+<br>deleteallrecords
+<br>importfile ImportedData.csv
+<br>so
+</font><font color="black">
+</td>
+</tr>
+</table>
+
+<comment> -------------------------------------------------------------------------</comment>
+<p>
+<table border="1">
+<tr>
+<td>
+<h3><center>Making the records in a table match the contents of a Microsoft Excel spreadsheet</center></h3>
+</td>
+</tr>
+<tr>
+<td>
+<center><b>Program</b></center>
+</td>
+<td>
+<center><b>Command File</b></center>
+</td>
+</tr>
+<tr>
+<td>
+<font color="blue">
+require 'QuickBaseClient'
+<br>qbc = QuickBase::Client.new( "my_username", "my_password", "my_application" )
+<br>qbc.lookupChdbid( "Imported Excel data" )
+<font color="green">
+<br># delete all the records in the "Imported Excel data" table then 
+<br># import new data from an Excel file.  The field names must be at the top of the file.
+<br># 'h' is the letter of the last column to import.
+<br># Note: any commas (',') in the data are converted to semi-colons (';').
+</font><font color="blue">
+<br>qbc._purgeRecords
+<br>qbc._importFromExcel( "ImportedExcelData.xls", 'h'  )
+<br>qbc.signOut
+</font><font color="black">
+</td>
+<td>
+<font color="blue">
+si my_username my_password
+<br>o my_application
+<br>use Imported Excel Data
+<br>deleteallrecords
+<br>importexcelfile ImportedExcelData.xls h
+<br>so
+</font><font color="black">
+</td>
+</tr>
+</table>
+
+<comment> -------------------------------------------------------------------------</comment>
+<p>
+<table border="1">
+<tr>
+<td>
+<h3><center>Deleting duplicate records from a table</center></h3>
+</td>
+</tr>
+<tr>
+<td>
+<center><b>Program</b></center>
+</td>
+<td>
+<center><b>Command File</b></center>
+</td>
+</tr>
+<tr>
+<td>
+<font color="blue">
+require 'QuickBaseClient'
+<br>qbc = QuickBase::Client.new( "my_username", "my_password", "my_application" )
+<font color="green">
+<br># Except for the most recent records, delete all the records with
+<br># the same values for 'First Name' and 'Last Name'
+</font><font color="blue">
+<br>qbc.deleteDuplicateRecords( [ "First Name", "Last Name" ] )
+<br>qbc.signOut
+</font><font color="black">
+</td>
+<td>
+<font color="blue">
+si my_username my_password
+<br>ruby deleteDuplicateRecords( [ "First Name", "Last Name" ] )
+<br>so
+</font><font color="black">
+</td>
+</tr>
+</table>
+
+<comment> -------------------------------------------------------------------------</comment>
+<p>
+<table border="1">
+<tr>
+<td>
+<h3><center>Making multiple copies of a record</center></h3>
+</td>
+</tr>
+<tr>
+<td>
+<center><b>Program</b></center>
+</td>
+<td>
+<center><b>Command File</b></center>
+</td>
+</tr>
+<tr>
+<td>
+<font color="blue">
+require 'QuickBaseClient'
+<br>qbc = QuickBase::Client.new( "my_username", "my_password", "my_application" )
+<font color="green">
+<br># make 6 copies of record 1
+</font><font color="blue">
+<br>qbc.copyRecord(  "1", 6  )
+<br>qbc.signOut
+</font><font color="black">
+</td>
+<td>
+<font color="blue">
+si my_username my_password
+<br>ruby qbc.copyRecord(  "1", 6  )
+<br>so
+</font><font color="black">
+</td>
+</tr>
+</table>
+
+<h2>Programs for more complex tasks</h2>
+
+<h3>Adding records for every day between two dates</h3>
+<pre>
+<font color="blue">
+require 'QuickBaseClient'
+require 'Date'
+
+qbc = QuickBase::Client.new( "my_username", "my_password", "my_application" )
+
+d = Date.new( 2006, 1, 1 )
+d.upto( Date.new( 2007, 1, 1 ) ){ |date| 
+   
+    ymd = date.to_s.split( /-/ )
+    mdy = "#{ymd[1]}-#{ymd[2]}-#{ymd[0]}"
+   
+    qbc.clearFieldValuePairList
+    fvl = qbc.addFieldValuePair( "Date field", nil, nil, "#{mdy}" )
+
+    qbc.addRecord( datefield, fvl )
+}
+</font><font color="black">
+</pre>
+
+<h3>Updating the latest copy of a file in a particular Quickbase record every hour</h3>
+<pre>
+<font color="blue">
+require 'QuickBaseClient'
+
+loop {
+  qbc = QuickBase::Client.new( "my_username", "my_password", "my_application" )
+  qbc.lookupChdbid( "Documents" ) # the table containing the files
+
+  <font color="green"># "12" is the number of the record (Record ID#) to be modified</font><font color="blue">
+  <font color="green"># "Document" is the name of the field containing a file attachment</font><font color="blue">
+  <font color="green"># "Version" and "Date" are additional field values to modify in the record</font><font color="blue">
+
+  qbc.updateFile( qbc.dbid, "12", "my_file.doc", "Document", { "Version" => "6",   "Note" => "Updated 01/30/2006" } )
+
+  qbc.signOut
+  qbc = nil
+
+  # wait one hour
+  sleep(60*60)
+}
+</font><font color="black">
+</pre>
+
+<h3>Automatically removing all the records from a particular Quickbase table every hour</h3>
+<pre>
+<font color="blue">
+require 'QuickBaseClient'
+
+loop {
+  qbc = QuickBase::Client.new( "my_username", "my_password", "my_application" )
+  qbc.lookupChdbid( "my_table" ) # the table to empty
+  qbc._purgeRecords
+  qbc.signOut
+  qbc = nil
+  sleep(60*60)
+}
+</font><font color="black">
+</pre>
+
+<h3>Creating an RSS view of a Quickbase table and uploading it into a QuickBase record</h3>
+<pre>
+<font color="blue">
+require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new( "my_username", "my_password", "my_application" )
+qbc.lookupChdbid( "my_table" ) 
+
+<font color="green"># get all the records from the table using the 'List Changes' query</font><font color="blue">
+qbc.doQuery( qbc.dbid, nil, nil, "List Changes" )
+
+rssText =  "&lt;?xml version=\"1.0\" ?&gt;\n"
+rssText &lt;&lt; " &lt;rss version=\"2.0\"&gt;\n" 
+rssText &lt;&lt; "  &lt;channel&gt;\n" 
+
+rssText &lt;&lt; "   &lt;title>my_table - RSS view&lt;/title&gt;\n"
+
+rssText &lt;&lt; "   &lt;link&gt;\n"
+rssText &lt;&lt; qbc.requestURL
+rssText &lt;&lt; "\n   &lt;/link&gt;\n"
+
+rssText &lt;&lt; "   &lt;description&gt;(#{Time.now})&lt;/description&gt;\n"
+
+qbc.records.each { |record| 
+   if record.is_a?( REXML::Element) and record.name == "record"
+   
+      itemTitle = ""
+      itemLink = ""
+      itemText = ""
+     
+      record.each{ |field|
+         if field.is_a?( REXML::Element)
+            case field.attributes[ "id" ]
+	       
+	       <font color="green"># the field with the QuickBase id "6" contains the title for on RSS item</font><font color="blue">
+	       when "6" then itemTitle = field.text if field.has_text? 
+	       
+	       <font color="green"># the field with the QuickBase id "10" contains the link to the record itself</font><font color="blue">
+	       when "10" then itemLink = field.text if field.has_text?
+	       
+	       <font color="green"># the field with the QuickBase id "26" contains the main text from the record</font><font color="blue">
+	       when "26" then itemText = field.text if field.has_text?
+	    end
+	 end
+      }
+      
+     <font color="green"># build the text for one RSS item</font><font color="blue">
+      rssText &lt;&lt; "    &lt;item&gt;\n"
+      rssText &lt;&lt; "     &lt;title&gt;#{qbc.encodeXML(itemTitle)}&lt;/title&gt;\n"
+      rssText &lt;&lt; "     &lt;link>#{qbc.encodeXML(itemLink)}&lt;/link&gt;\n"
+      rssText &lt;&lt; "     &lt;description>#{qbc.encodeXML(itemText)}&lt;/description&gt;\n"
+      rssText &lt;&lt; "    &lt;/item&gt;"
+     
+   end
+}
+
+rssText &lt;&lt; "  &lt;/channel&gt;\n" 
+rssText &lt;&lt; " &lt;/rss&gt;\n" 
+
+<font color="green"># Write all the RSS text for the table into a file on the local hard drive</font><font color="blue">
+File.open( "my_table.rss.xml", "w" ) { |file| file.write( rssText ) }
+
+<font color="green"># Switch to a different table in "my_application" that already contains RSS files</font><font color="blue">
+qbc.lookupChdbid( "rss table" )
+
+<font color="green"># Put the file we've just created into record 4, into the file attachment field called "RSS File"</font><font color="blue">
+qbc.updateFile( qbc.dbid, "4", "my_table.rss.xml", "RSS File" )
+
+qbc.signOut
+</font><font color="black">
+</pre>
+
+<h2><a href="QuickBaseClient.rb">QuickBaseClient.rb</a> Reference</h2>
+<h3>Class QuickBase::Client</h3>
+<b>API wrapper methods</b>
+<pre>
+These methods closely mimic the 'API_' requests as specified in the <a href="https://www.quickbase.com/up/6mztyxu8/g/rc7/en/va/QuickBaseAPI.htm">QuickBase HTTP API Reference document</a>.
+Each method expects the 'Input Parameters' of the equivalent HTTP API request.
+Each method returns the 'Output Parameters' of the equivalent HTTP API response.
+(Ruby methods can return multiple values)
+Input and Output Parameters are all stored in '@' member variables.   
+This makes it easy to reuse parameters across multiple requests.
+Methods returning lists can be called with an iteration block, e.g. doQuery(){|record|, puts record } .
+
+Each method with dbid as the first parameter has a corresponding method with '_' before the name.
+The '_' methods re-use @dbid instead of a requiring the dbid parameter. 
+</pre>
+<ol>
+<li><font color="blue">def addField( dbid, label, type, mode = nil )</font><font color="black">
+<br>Adds a new field to a table. dbid = the table ID, label = text to appear on screen for this field, type = the field type.
+<li><font color="blue">def addRecord(  dbid, fvlist = nil, disprec = nil, fform = nil, ignoreError = nil, update_id = nil )</font><font color="black">
+<br>Adds a new record to a table. fvlist is an instance of a FieldValuePair list.  Use addFieldValuePair() to build that list of fields
+<br>to use for this parameter.
+<li><font color="blue">def addReplaceDBPage( dbid, pageid, pagename, pagetype, pagebody, ignoreError = nil )</font><font color="black">
+<br>Add or replace a page associated with a table.
+<li><font color="blue">def addUserToRole( dbid, userid, roleid )</font><font color="black">
+<br>Add a user to a role in an application.  The dbid must be an application dbid, not a table dbid.
+<li><font color="blue">def authenticate( username, password, hours = nil )</font><font color="black">
+<br>Signs into QuickBase using the specified username and password.  
+<br>Subsequent QuickBase requests use the @ticket that is set as a result of this call.
+<li><font color="blue">def changePermission( dbid, uname, view, modify, create, delete, saveviews, admin )</font><font color="black">
+<br>Create, update, delete access rights for a user. <b>NOTE: API_ChangePermission is no longer a valid QuickBase HTTP API request.</b>
+<li><font color="blue">def changeRecordOwner( dbid, rid, newowner )</font><font color="black">
+<br>Change the owner of a record. 
+<li><font color="blue">def changeUserRole( dbid, userid, roleid, newroleid )</font><font color="black">
+<br>Change the role of a user in a particular application. The dbid must be an application dbid, not a table dbid.
+<li><font color="blue">def cloneDatabase( dbid, newdbname, newdbdesc, keepData )</font><font color="black">
+<br>Copy an application, with ot without data.
+<li><font color="blue">createDatabase( dbname, dbdesc )</font><font color="black">
+<br>Create a new application. 
+<li><font color="blue">def createTable( pnoun, application_dbid = @dbid )</font><font color="black">
+<br>Add a table to an application. pnoun should be a plural noun, such as 'Employees'. The application_dbid must be an application dbid, not a table dbid.
+<li><font color="blue">def deleteDatabase( dbid )</font><font color="black">
+<br>Delete an application.
+<li><font color="blue">def deleteField( dbid, fid )</font><font color="black">
+<br>Remove a field from a table.
+<li><font color="blue">def deleteRecord( dbid, rid )</font><font color="black">
+<br>Delete a record.
+<li><font color="blue">def doQuery( dbid, query = nil, qid = nil, qname = nil, clist = nil, slist = nil, fmt = "structured", options = nil  )</font><font color="black">
+<br>Retrieve a list of records.  By default, all records will be retrieved with all columns.
+<li><font color="blue">def _doQueryName( queryName )</font><font color="black">
+<br>This is not a direct API wrapper. It is a simple way to use a named query (e.g. 'List All') for the active table.
+<li><font color="blue">def downLoadFile( dbid, rid, fid, vid = "0" )</font><font color="black">
+<br>Downloads a file.  
+<li><font color="blue">def editRecord( dbid, rid, fvlist, disprec = nil, fform = nil, ignoreError = nil, update_id = nil  )</font><font color="black">
+<br>Modifies an exsiting record. fvlist is an instance of a FieldValuePair list.  
+<br>Use addFieldValuePair() to build the @fvlist list of fields to use for this parameter.
+<li><font color="blue">def fieldAddChoices( dbid, fid, choice )</font><font color="black">
+<br>Adds choices to a multiple-choice text field.
+<li><font color="blue">def fieldRemoveChoices( dbid, fid, choice )</font><font color="black">
+<br>Removes choices from a multiple-choice text field.
+<li><font color="blue">def findDBByname( dbname )</font><font color="black">
+<br>Set the active application using its name. e.g. 'QuickBase Community Forum'.
+<li><font color="blue">def genAddRecordForm( dbid, fvlist = nil )</font><font color="black">
+<br>Retrieves the HTML for adding a record to a table.
+<li><font color="blue">def genResultsTable( dbid, query = nil, clist = nil, slist = nil, jht = nil, jsa = nil, options = nil )</font><font color="black">
+<br>Retrieves the HTML for displaying the results of a query.
+<li><font color="blue">def getAppDTMInfo( dbid )</font><font color="black">
+<br>The fastest way to get the last time that an application was modified and each of its tables was last modified, or the last time one particular table was modified.
+<li><font color="blue">def getDBInfo( dbid )</font><font color="black">
+<br>Retrieves the properties for table.
+<li><font color="blue">def getDBPage( dbid, pageid, pagename = nil )</font><font color="black">
+<br>Retrieves a page associated with a table.
+<li><font color="blue">def getDBvar( dbid, varname )</font><font color="black">
+<br>Retrieves the value of an application variable. The dbid must be for an application , not a table.
+<li><font color="blue">def getNumRecords( dbid )</font><font color="black">
+<br>Retrieves the number of records in a table.
+<li><font color="blue">def getOneTimeTicket()</font><font color="black">
+<br>Get a QuickBase ticket that is valid only for the next 5 minutes.
+<li><font color="blue">def getRecordAsHTML( dbid, rid, jht = nil )</font><font color="black">
+<br>Retrieves a record in HTML format.
+<li><font color="blue">def getRecordInfo( dbid, rid )</font><font color="black">
+<br>Retrieves all the field values for a specified record.
+<li><font color="blue">def getRoleInfo( dbid )</font><font color="black">
+<br>Retrieves the list of roles defined for an application. The dbid must be for an application, not a table.
+<li><font color="blue">def getSchema( dbid )</font><font color="black">
+<br>Retrieves all the information about the fields in a table. 
+<li><font color="blue">getServerStatus</font><font color="black">
+<br>Retrieves information about the QuickBase server. 
+<li><font color="blue">def getUserInfo( email = nil )</font><font color="black">
+<br>Retrieves information about a particular user. Defaults to the user logged in via the API. 
+<li><font color="blue">def getUserRole( dbid, userid )</font><font color="black">
+<br>Retrieves information about a particular user's role in an application. The dbid must be for an application, not a table. 
+<li><font color="blue">def grantedDBs( withembeddedtables = nil, excludeparents = nil, adminOnly = nil )</font><font color="black">
+<br>Retrieves a list of applications accessible by the authenticated user.
+<li><font color="blue">def importFromCSV( dbid, records_csv, clist, skipfirst = nil )</font><font color="black">
+<br>Imports CSV data into a table. records_csv is a string containing the data.
+<li><font color="blue">def listDBPages(dbid)</font><font color="black">
+<br>Get the list of pages associated with an application. The dbid must be for an application, not a table.
+<li><font color="blue">def provisionUser( dbid, roleid, email, fname, lname )</font><font color="black">
+<br>Set up the information for a new QuickBase user, in preparation for calling sendInvitation(). The dbid must be for an application, not a table.
+<li><font color="blue">def purgeRecords( dbid, query = nil, qid = nil, qname = nil )</font><font color="black">
+<br>Deletes all the records from a table.
+<li><font color="blue">def removeUserFromRole( dbid, userid, roleid )</font><font color="black">
+<br>Removes a user from a particular role in a particular application. The dbid must be for an application, not a table.
+<li><font color="blue">def renameApp( dbid, newappname )</font><font color="black">
+<br>Rename an application. The dbid must be for an application, not a table.
+<li><font color="blue">def runImport( dbid, id )</font><font color="black">
+<br>Run a predefined QuickBase Import to get data into a particular table.  The id is the numeric identifier of the import.
+<li><font color="blue">def sendInvitation( dbid, userid )</font><font color="black">
+<br>Send an email inviting a user to access an application. The dbid must be for an application, not a table.
+<li><font color="blue">def setDBvar( dbid, varname, value )</font><font color="black">
+<br>Set the value of an application variable. The dbid must be for an application, not a table.
+<li><font color="blue">def setFieldProperties( dbid, properties, fid )</font><font color="black">
+<br>Modifies the properties of a field in a table.
+<li><font color="blue">def signOut()</font><font color="black">
+<br>Signout from QuickBase.
+<li><font color="blue">def userRoles( dbid )</font><font color="black">
+<br>Get the list of roles for the users with access to a specific application.The dbid must be for an application, not a table.
+</ol>
+
+<b>Helper methods</b>
+<pre>
+These methods are focused on reducing the amount of code you 
+have to write to get stuff done using the QuickBase::Client.
+</pre>
+<ol>
+<li><font color="blue">def addOrEditRecord( dbid, fvlist, rid = nil, disprec = nil, fform = nil, ignoreError = nil, update_id = nil  )</font><font color="black">
+<br>Use this if you aren't sure whether a particular record already exists or not.
+
+<li><font color="blue">def getRecord(rid, dbid = @dbid)</font><font color="black">
+<br>Get a record as a Hash, using the record id and dbid .
+
+
+<li><font color="blue">def iterateDBPages(dbid)</font><font color="black">
+<br>Loop through the list of Pages for an application.
+
+<li><font color="blue">def getDBPagesAsArray(dbid)</font><font color="black">
+<br>Get an array Pages for an application. Each item in the array is a Hash.
+
+<li><font color="blue">def Client.processDatabase( username, password, appname, chainAPIcalls = nil )</font><font color="black">
+<pre>
+This class method 
+
+   - creates a QuickBase::Client, 
+   - signs into QuickBase 
+   - connects to a specific application
+   - runs code in the associated block 
+   - signs out of QuickBase
+   
+e.g. QuickBase::Client.processDatabase( "user", "password", "my DB" ) { |qbClient,dbid| qbClient.getDBInfo( dbid ) }
+</pre>
+<li><font color="blue">def chainAPIcallsBlock()</font><font color="black">
+<pre>
+This method changes all the API_ wrapper methods to return 'self' instead of their
+normal return values. The change is in effect only within the associated block.  
+This allows mutliple API_ calls to be 'chained' together without needing 'qbClient' in front of each call.  
+
+e.g. qbClient.chainAPIcallsBlock { 
+          qbClient
+             .addField( @dbid, "a text field", "text" )
+             .addField( @dbid, "a choice field", "text" )
+             .fieldAddChoices( @dbid, @fid, %w{ one two three four five } )  
+      }
+</pre>
+<li><font color="blue">def setActiveRecord( dbid, rid )</font><font color="black">
+<br>Set the active database and record for subsequent method calls.
+
+<li><font color="blue">def setFieldValue( fieldName, fieldValue )</font><font color="black">
+<br>Change a named field's value in the active record.   
+<br>e.g. setFieldValue( "Location", "Miami" )
+
+<li><font color="blue">def setFieldValues( fields )</font><font color="black">
+<br>Change several named fields' values in the active record, e.g. setFieldValue( {"Location" => "Miami", "Phone" => "343-4567" } )
+
+<li><font color="blue">def changeRecords( fieldNameToSet, fieldValueToSet, fieldNameToTest, test, fieldValueToTest )</font><font color="black">
+<pre>
+Change a field's value in multiple records.   
+If the optional test field/operator/value are supplied, only records matching the test    
+field will be modified, otherwise all records will be modified. 
+
+e.g. changeRecords( "Status", "special", "Account Balance", ">", "100000.00" )
+
+</pre>
+<li><font color="blue">def deleteRecords( fieldNameToTest = nil, test = nil, fieldValueToTest = nil)</font><font color="black">
+<pre>
+Delete all records in the active table that match 
+the field/operator/value. e.g. deleteRecords( "Status", "==", "inactive" ).
+To delete ALL records, call deleteRecords() with no parameters. 
+This is the same as calling _purgeRecords.
+</pre>
+<li><font color="blue">def getAllValuesForFields( dbid, fieldNames, query = nil, qid = nil, qname = nil, clist = nil, slist = nil, fmt = "structured", options = nil )</font><font color="black">
+<pre>
+Get all the values for one or more fields from a specified table.
+e.g. getAllValuesForFields( "dhnju5y7", [ "Name", "Phone" ] )
+The results are returned in Hash, e.g. { "Name" => values[ "Name" ], "Phone" => values[ "Phone" ] }
+The parameters after 'fieldNames' are passed directly to the doQuery() API_ call.
+</pre>
+
+
+<li><font color="blue">def getAllValuesForFieldsAsArray( dbid, fieldNames = nil, query = nil, qid = nil, qname = nil, clist = nil, slist = nil, fmt = "structured", options = nil )</font><font color="black">
+<pre>
+Get all the values for one or more fields from a specified table, as an Array of records.
+This also formats the field values instead of returning the raw value.
+</pre>
+
+<li><font color="blue">def editRecords(dbid,fieldValuesToSet,query=nil,qid=nil,qname=nil)</font><font color="black">
+<pre>
+Set the values of fields in all records returned by a query.
+fieldValuesToSet must be a Hash of fieldnames+values, e.g. {"Location" => "Miami", "Phone" => "343-4567"}
+</pre>
+
+<li><font color="blue">def iterateRecords( dbid, fieldNames, query = nil, qid = nil, qname = nil, clist = nil, slist = nil, fmt = "structured", options = nil )</font><font color="black">
+<pre>
+Loop through records returned from a query. Each record is a field+value Hash.
+e.g. iterateRecords( "dhnju5y7", ["Name","Address"] ) { |values| puts values["Name"], values["Address"] }
+</pre>
+
+<li><font color="blue">def iterateFilteredRecords( dbid, fieldNames, query = nil, qid = nil, qname = nil, clist = nil, slist = nil, fmt = "structured", options = nil )</font><font color="black">
+<pre>
+Same as iterateRecords but with fields optionally filtered by Ruby regular expressions.
+e.g. iterateFilteredRecords( "dhnju5y7", [{"Name" => "[A-E].+}","Address"] ) { |values| puts values["Name"], values["Address"] }
+</pre>
+
+
+<li><font color="blue">def getFilteredRecords( dbid, fieldNames, query = nil, qid = nil, qname = nil, clist = nil, slist = nil, fmt = "structured", options = nil )</font><font color="black">
+<pre>
+e.g. getFilteredRecords( "dhnju5y7", [{"Name" => "[A-E].+}","Address"] ) { |values| puts values["Name"], values["Address"] }
+</pre>
+
+<li><font color="blue">def iterateJoinRecords(tablesAndFields)</font><font color="black">
+<pre>
+Get records from two or more tables and/or queries with the same value in a 
+'join' field and loop through the joined results.
+The 'joinfield' does not have to have the same name in each table.
+Fields with the same name in each table will be merged, with the value from the last 
+table being assigned. This is similar to an SQL JOIN.
+</pre>
+
+
+
+<li><font color="blue">def getJoinRecords(tablesAndFields)</font><font color="black">
+<pre>
+Get an array of records from two or more tables and/or queries with the same value in a 'join' field.
+The 'joinfield' does not have to have the same name in each table.
+Fields with the same name in each table will be merged, with the value from the last 
+table being assigned. This is similar to an SQL JOIN.
+</pre>
+
+
+<li><font color="blue">def iterateUnionRecords(tables,fieldNames)</font><font color="black">
+<pre>
+Get values from the same fields in two or more tables and/or queries and loop through the merged results.
+The merged records will be unique. This is similar to an SQL UNION.
+</pre>
+
+
+<li><font color="blue">def getUnionRecords(tables,fieldNames)</font><font color="black">
+<pre>
+Returns an Array of values from the same fields in two or more tables and/or queries.
+The merged records will be unique. This is similar to an SQL UNION.
+</pre>
+
+
+
+<li><font color="blue">
+def iterateSummaryRecords( dbid, fieldNames,query = nil, qid = nil, qname = nil, clist = nil, slist = nil, fmt = "structured", options = nil )
+</font><font color="black">
+<pre>
+(The QuickBase API does not supply a method for this.) 
+Loop through summary records, like the records in a QuickBase Summary report.
+Fields with 'Total' and 'Average' checked in the target table will be summed and/or averaged.
+Other fields with duplicate values will be merged into a single 'record'.
+The results will be sorted by the merged fields, in ascending order.
+ e.g. -  
+    iterateSummaryRecords( "vavaa4sdd", ["Customer", "Amount"] ) {|record| 
+       puts "Customer: #{record['Customer']}, Amount #{record['Amount']}
+    } 
+ would print the total Amount for each Customer, sorted by Customer.
+</pre>
+
+
+<li><font color="blue">
+def getSummaryRecords( dbid, fieldNames,query = nil, qid = nil, qname = nil, clist = nil, slist = nil, fmt = "structured", options = nil )
+</font><font color="black">
+<pre>
+Same as iterateSummaryRecords, but returns an array of records to be processed
+without necessarily looping through the records.
+</pre>
+
+
+<li><font color="blue">
+def iterateRecordInfos(dbid, query = nil, qid = nil, qname = nil, clist = nil, slist = nil, fmt = "structured", options = nil)
+</font><font color="black">
+<pre>
+Loop through a list of records returned from a query. 
+Each record will contain all the fields with values formatted for readability by QuickBase via API_GetRecordInfo.
+This is much slower than iterateRecords() because it every record is read in a separate call to QuickBase.
+</pre>
+
+<li><font color="blue">
+def processRESTRequest(requestString)
+</font><font color="black">
+<pre>
+Returns table or record values using REST syntax. e.g. -
+puts processRESTRequest("8emtadvk/24105") # prints record 24105 from Community Forum
+puts processRESTRequest("8emtadvk") # prints name of table with dbid of '8emtadvk'
+puts qbc.processRESTRequest("6ewwzuuj/Function Name") # prints list of QuickBase Functions
+</pre>
+
+
+<li><font color="blue">
+def min( dbid, fieldNames, query = nil, qid = nil, qname = nil, clist = nil, slist = nil, fmt = "structured", options = nil )
+</font><font color="black">
+<pre>
+Find the lowest value for one or more fields in the records returned by a query.
+e.g. minimumsHash = min("dfdfafff",["Date Sent","Quantity","Part Name"])
+</pre>
+
+
+<li><font color="blue">
+def max( dbid, fieldNames, query = nil, qid = nil, qname = nil, clist = nil, slist = nil, fmt = "structured", options = nil )
+</font><font color="black">
+<pre>
+Find the lowest value for one or more fields in the records returned by a query.
+e.g. minimumsHash = min("dfdfafff",["Date Sent","Quantity","Part Name"])
+</pre>
+
+
+<li><font color="blue">
+def count( dbid, fieldNames, query = nil, qid = nil, qname = nil, clist = nil, slist = nil, fmt = "structured", options = nil )
+</font><font color="black">
+<pre>
+Returns the number non-null values for one or more fields in the records returned by a query.
+e.g. countsHash = count("dfdfafff",["Date Sent","Quantity","Part Name"])
+</pre>
+
+
+<li><font color="blue">
+def sum( dbid, fieldNames, query = nil, qid = nil, qname = nil, clist = nil, slist = nil, fmt = "structured", options = nil )
+</font><font color="black">
+<pre>
+Returns the sum of the values for one or more fields in the records returned by a query.
+e.g. sumsHash = sum("dfdfafff",["Date Sent","Quantity","Part Name"])
+</pre>
+
+
+<li><font color="blue">
+def average( dbid, fieldNames, query = nil, qid = nil, qname = nil, clist = nil, slist = nil, fmt = "structured", options = nil )
+</font><font color="black">
+<pre>
+Returns the average of the values for one or more fields in the records returned by a query.
+e.g. averagesHash = sum("dfdfafff",["Date Sent","Quantity","Part Name"])
+</pre>
+
+
+<li><font color="blue">
+def applyPercentToRecords( dbid, numericField, percentField, query = nil, qid = nil, qname = nil, clist = nil, slist = nil, fmt = "structured", options = nil) 
+</font><font color="black">
+<pre>
+Query records, sum the values in a numeric field, calculate each record's percentage 
+of the sum and put the percent in a percent field each record.
+</pre>
+
+
+<li><font color="blue">
+def applyDeviationToRecords( dbid, numericField, deviationField, 
+</font><font color="black">
+<pre>
+Query records, get the average of the values in a numeric field, calculate each record's deviation
+from the average and put the deviation in a percent field each record.
+</pre>
+
+
+<li><font color="blue">
+def percent( inputValues )
+</font><font color="black">
+<pre>
+Given an array of two numbers, return the second number as a percentage of the first number
+</pre>
+
+
+<li><font color="blue">
+def deviation( inputValues )
+</font><font color="black">
+<pre>
+Given an array of two numbers, return the difference between the numbers as a positive number
+</pre>
+
+
+<li><font color="blue">
+def getFieldChoices(dbid,fieldName=nil,fid=nil)
+</font><font color="black">
+<pre>
+Get an array of the existing choices for a multiple-choice text field.
+</pre>
+
+
+<li><font color="blue">
+def getAllRecordIDs( dbid )
+</font><font color="black">
+<pre>
+Get an array of all the record IDs for a specified table.
+e.g. IDs = getAllRecordIDs( "dhnju5y7" ){ |id| puts "Record #{id}" }
+</pre>
+
+
+<li><font color="blue">
+def findDuplicateRecordIDs(  fnames, fids, dbid = @dbid, ignoreCase = true )</font><font color="black">
+<pre>
+Finds records with the same values in a specified
+list of fields.  The field list may be a list of field IDs or a list of field names.
+Returns a hash with the structure { "duplicated values" => [ rid, rid, ... ] }
+</pre>
+
+
+<li><font color="blue">
+</font><font color="black">
+<pre>
+</pre>
+
+
+<li><font color="blue">
+def deleteDuplicateRecords(  fnames, fids = nil, options = nil, dbid = @dbid )</font><font color="black">
+<pre>
+Finds records with the same values in a specified
+list of fields and deletes all but the first or last duplicate record.
+The field list may be a list of field IDs or a list of field names.
+The 'options' parameter can be used to keep the oldest record instead of the
+newest record, and to control whether to ignore the case of field values when
+deciding which records are duplicates.  Returns the number of records deleted.
+</pre>
+
+
+<li><font color="blue">
+def copyRecord(  rid, numCopies = 1, dbid = @dbid )
+</font><font color="black">
+<pre>
+Make one or more copies of a record.
+</pre>
+
+
+<li><font color="blue">
+def importFromExcel( dbid, excelFilename, lastColumn = 'j', lastDataRow = 0, worksheetNumber = 1, fieldNameRow = 1, firstDataRow = 2, firstColumn = 'a' )
+</font><font color="black">
+<pre>
+Import data directly from an Excel file into a table. The field names are expected to be on line 1 by default.
+By default, data will be read starting from row 2 and ending on the first empty row. 
+Commas in field values will be converted to semi-colons.
+e.g. importFromExcel( @dbid, "my_spreadsheet.xls", 'h' )
+</pre>
+
+<li><font color="blue">def importCSVFile( filename, dbid = @dbid, targetFieldNames = nil )</font><font color="black">
+<pre>
+Add records from lines in a CSV file. If dbid is not specified, the active table will be used. 
+values in subsequent lines.  The file must not contain commas inside field names or values.
+</pre>
+
+<li><font color="blue">def importTSVFile( filename, dbid = @dbid, targetFieldNames = nil )</font><font color="black">
+<pre>
+Import records from a text file in Tab-Separated-Values format.
+</pre>
+
+<li><font color="blue">def importSVFile( filename, fieldSeparator = ",", dbid = @dbid, targetFieldNames = nil )</font><font color="black">
+<pre>
+Add records from lines in a separated values text file, using  a specified field name/value separator.
+
+ e.g. importSVFile( "contacts.txt", "::", "dhnju5y7", [ "Name", "Phone", "Email" ] )
+  
+ If targetFieldNames is not specified, the first line in the file
+ must be a list of field names that match the values in subsequent lines.  
+ 
+ If there are no commas in any of the field names or values, the file will be 
+ treated as if it were a CSV file and imported using the QuickBase importFromCSV API call.
+ Otherwise, records will be added using addRecord() for each line. 
+ Lines with the wrong number of fields will be skipped.
+ Double-quoted fields can contain the field separator, e.g. f1,"f,2",f3
+ Spaces will not be trimmed from the beginning or end of field values.
+</pre>
+<li><font color="blue">def uploadFile( dbid, filename, fileAttachmentFieldName, additionalFieldsToSet = nil )</font><font color="black">
+<pre>
+Upload a file into a new record in a table. Additional field values can optionally be set.
+e.g. uploadFile( "dhnju5y7", "contacts.txt", "Contacts File", { "Notes" => "#{Time.now}" }
+</pre>
+<li><font color="blue">def updateFile( dbid, rid, filename, fileAttachmentFieldName, additionalFieldsToSet = nil )</font><font color="black">
+<pre>
+Update the file attachment in an existing record in a table. Additional field values can optionally be set.
+e.g. updateFile( "dhnju5y7", "6", "contacts.txt", "Contacts File", { "Notes" => "#{Time.now}" }
+</pre>
+<li><font color="blue">def logToFile( filename )</font><font color="black">
+<pre>
+Log requests to QuickBase and responses from QuickBase in a file.
+Useful for utilities that run unattended.
+</pre>
+
+<li><font color="blue">def eachRecord( records = @records )</font><font color="black">
+<pre>
+Iterate @records XML and yield only &lt;record&gt; elements.
+</pre>
+
+
+<li><font color="blue">def doSQLInsert(sqlString)</font><font color="black">
+<pre>
+Translate a simple SQL INSERT statement to a QuickBase addRecord call.
+Note: This method is here primarily for Rails integration.
+Note: This assumes, like SQL, that your column (i.e. field) names do not contain spaces.
+</pre>
+
+
+<li><font color="blue">def doSQLUpdate(sqlString)</font><font color="black">
+<pre>
+Translate a simple SQL UPDATE statement to a QuickBase editRecord call.
+Note: This method is here primarily for Rails integration.
+Note: This assumes, like SQL, that your column (i.e. field) names do not contain spaces.
+Note: This assumes that Record ID# is the key field in your table.
+</pre>
+
+<li><font color="blue">def doSQLQuery( sqlString, returnOptions = nil )</font><font color="black">
+<pre>
+Translate a simple SQL SELECT statement to a QuickBase query and run it.
+ 
+If any supplied field names are numeric, they will be treated as QuickBase field IDs if
+they aren't valid field names. 
+
+e.g. doSQLQuery( "SELECT FirstName,Salary FROM Contacts WHERE LastName = "Doe" ORDER BY FirstName )
+e.g. doSQLQuery( "SELECT * FROM Books WHERE Author = "Freud" )
+
+Note: This method is here primarily for Rails integration.
+Note: This assumes, like SQL, that your column (i.e. field) names do not contain spaces.
+</pre>
+
+
+</ol>
+
+<b>'Plumbing' methods</b>
+<pre>
+These methods implement the core functionality to make the API_ wrapper methods
+and Helper methods work.  Most programs will not need to use these methods directly 
+and should avoid doing so.
+</pre>
+<ol>
+<li><font color="blue">def initialize( username = nil, password = nil, appname = nil, useSSL = true, printRequestsandReponses = false, stopOnError = false, showTrace = false, org = "www" )</font><font color="black">
+<pre>
+Set printRequestsandReponses to true to view the XML sent to QuickBase and return from QuickBase.
+This can be very useful during debugging.
+
+Set stopOnError to true to discontinue sending requests to QuickBase after an error has occured with a request.
+
+Set showTrace to true to view the complete stack trace of your running program.  This should only be
+necessary as a last resort when a low-level exception has occurred.
+</pre>
+
+<li><font color="blue">def Client.init( options )</font><font color="black">
+<br>Class method to create an instance of QuickBase::Client using a Hash of parameters. This will often be nicer to use than new().
+
+<li><font color="blue">def debugHTTPConnection()</font><font color="black">
+<br>Causes useful information to be printed to the screen for every HTTP request.
+
+
+<li><font color="blue">def setHTTPConnection( useSSL, org = "www" )</font><font color="black">
+<br>initializes the connection to QuickBase.
+
+<li><font color="blue">def setqbhost( useSSL, org = "www" )</font><font color="black">
+<br>sets the QuickBase URL and port to use for requests.
+
+<li><font color="blue">def setHTTPConnectionAndqbhost( useSSL, org = "www" )</font><font color="black">
+<br>initializes the connection to QuickBase and sets the QuickBase URL and port to use for requests.
+
+<li><font color="blue">def clientMethods()</font><font color="black">
+<br>Return an array of all the public methods of this class.
+<br>Used by CommandLineClient to verify commands entered by the user.
+
+<li><font color="blue">def sendRequest( api_Request, xmlRequestData = nil )</font><font color="black">
+<br>Sends requests to QuickBase and processes the reponses.
+
+<li><font color="blue">def resetErrorInfo()</font><font color="black">
+<br>Resets error info before QuickBase requests are sent.
+
+<li><font color="blue">def getDBforRequestURL( api_Request )</font><font color="black">
+<br>Determines whether the URL for a QuickBase request
+<br>is for a specific database table or not, and returns the appropriate string
+<br>for that portion of the request URL.   
+
+<li><font color="blue">def getAuthenticationXMLforRequest()</font><font color="black">
+<br>Returns the request XML for either a ticket or a username and password.
+
+<li><font color="blue">def isHTMLRequest?( api_Request )</font><font color="black">
+<br>Returns whether a request will return HTML rather than XML.
+
+<li><font color="blue">def toggleTraceInfo( showTrace )</font><font color="black">
+<br>Turns program stack tracing on or off.  If followed by a block,
+<br>the tracing will be toggled on or off at the end of the block.
+
+<li><font color="blue">def printRequest( url, headers, xml )</font><font color="black">
+<br>Called by sendRequest if @printRequestsandReponses is true.
+
+<li><font color="blue">def printResponse( code, xml )</font><font color="black">
+<br>Called by sendRequest if @printRequestsandReponses is true.
+
+<li><font color="blue">def printLastError</font><font color="black">
+<br>Prints the error info, if any, for the last request sent to QuickBase.
+
+<li><font color="blue">def processResponse( responseXML )</font><font color="black">
+<br>Except for requests that return HTML, called by sendRequest to process the XML responses returned from QuickBase.
+
+<li><font color="blue">def getErrorInfoFromResponse()</font><font color="black">
+<br>Extracts error info from XML responses returned by QuickBase.
+
+<li><font color="blue">def parseResponseXML( xml )</font><font color="black">
+<br>Called by processResponse to put the XML from QuickBase into a DOM tree using the REXML module that comes with Ruby.
+
+<li><font color="blue">def getResponseValue( field )</font><font color="black">
+<br>Gets the value for a specific field at the top level of the XML returned from QuickBase.
+
+<li><font color="blue">def getResponsePathValue( path )</font><font color="black">
+<br>Gets the value of a field using an XPath spec., e.g. field/name.
+
+<li><font color="blue">def getResponsePathValues( path )</font><font color="black">
+<br>Gets an array of values at an Xpath in the XML from QuickBase.
+
+<li><font color="blue">def getResponseElements( path )</font><font color="black">
+<br>Gets an array of elements at an Xpath in the XML from QuickBase.
+
+<li><font color="blue">def getResponseElement( path )</font><font color="black">
+<br>Gets the element at an Xpath in the XML from QuickBase.
+
+<li><font color="blue">def getAttributeString( element )</font><font color="black">
+<br>Returns a string representation of the attributes of an XML element.
+
+<li><font color="blue">def lookupField( fid )</font><font color="black">
+<br>Returns the XML element for a field definition.
+<br>getSchema() or doQuery()  should be called before this.
+
+<li><font color="blue">def lookupFieldData( fid )</font><font color="black">
+<br>returns the XML element for a field returned by a getRecordInfo call.
+
+<li><font color="blue">def getFieldDataValue(fid)</font><font color="black">
+<br>Returns the value for a field returned by a getRecordInfo call.
+
+<li><font color="blue">def getFieldDataPrintableValue(fid)</font><font color="black">
+<br> Returns the printable value for a field returned by a getRecordInfo call.
+
+<li><font color="blue">def lookupFieldIDByName( fieldName )</font><font color="black">
+<br>Gets the ID for a field using the QuickBase field label.
+
+<li><font color="blue">def getFieldNames( dbid = nil, lowerOrUppercase = "")</font><font color="black">
+<br>Gets an array of the field names for a table.
+
+<li><font color="blue">def getFieldIDs(dbid = nil)</font><font color="black">
+<br>Gets an array of the field IDs for a table.
+
+<li><font color="blue">def getApplicationVariables( dbid = nil )</font><font color="black">
+<br>Get a Hash of application variables.
+
+<li><font color="blue">def getApplicationVariable( variableName, dbid = nil )</font><font color="black">
+<br>Get the value of an application variable.
+
+<li><font color="blue">def lookupFieldNameFromID( fid )</font><font color="black">
+<br>Gets a field name (i.e. QuickBase field label) using a field ID.
+<br>getSchema() or doQuery()  should be called before this.
+
+<li><font color="blue">def lookupFieldName( element )</font><font color="black">
+<br>Returns the name of field given an "fid" XML element.
+
+<li><font color="blue">def lookupFieldType( element )</font><font color="black">
+<br>Returns a QuickBase field type, given an XML "fid" element.
+
+<li><font color="blue">def lookupFieldsByType( type )</font><font color="black">
+<br>Returns an array of XML field elements matching a QuickBase field type.
+
+<li><font color="blue">def lookupFieldPropertyByName( fieldName, property )</font><font color="black">
+<br>Returns the value of a field property, or nil.
+
+<li><font color="blue">def isRecordidField?( fid )</font><font color="black">
+<br>Returns whether a field ID is the ID for the key field in a QuickBase table.
+
+<li><font color="blue">def isTotalField?(fieldName)</font><font color="black">
+<br>Returns whether a field will show a Total on reports.
+
+<li><font color="blue">def isAverageField?(fieldName)</font><font color="black">
+<br>Returns whether a field will show an Average on reports.
+
+<li><font color="blue">def formatFieldValue( value, type, options = nil )</font><font color="black">
+<br>Returns a human-readable string representation of a QuickBase field value.
+<br>Also required for subsequent requests to QuickBase.
+
+<li><font color="blue">def printChildElements( element, indent = 0 )</font><font color="black">
+<br>Recursive method to print a simplified (yaml-like) tree of any XML element returned by QuickBase.  
+<br>Translates field IDs into field names. Very useful during debugging.
+
+<li><font color="blue">def processChildElements( element, leafElementsOnly, block )</font><font color="black">
+<br>Recursive method to process leaf and (optionally) parent elements of any XML element returned by QuickBase.
+
+<li><font color="blue">def findElementByAttributeValue( elements, attribute_name, attribute_value )</font><font color="black">
+<br>Returns the first XML sub-element with the specified attribute value.
+
+<li><font color="blue">def findElementsByAttributeValue( elements, attribute_name, attribute_value )</font><font color="black">
+<br>Returns an array of XML sub-elements with the specified attribute value.
+
+<li><font color="blue">def findElementsByAttributeName( elements, attribute_name )</font><font color="black">
+<br>Returns an array of XML sub-elements with the specified attribute name.
+
+<li><font color="blue">def lookupRecord( rid )</font><font color="black">
+<br>returns the XML element for a record with the specified ID.
+
+<li><font color="blue">def lookupQuery( qid )</font><font color="black">
+<br>returns the XML element for a query with the specified ID.
+
+<li><font color="blue">def formatChdbidName( tableName )</font><font color="black">
+<br>Given the name of a QuickBase table, returns the QuickBase representation of the table name.
+
+<li><font color="blue">def lookupChdbid( tableName )</font><font color="black">
+<br>Makes the table with the specified name the active table.
+
+<li><font color="blue">def getTableName(dbid)</font><font color="black">
+<br>Get the name of a table given its id.
+
+<li><font color="blue">def getTableNames(dbid, lowercaseOrUpperCase = "")</font><font color="black">
+<br>Get a list of the names of the child tables of an application.
+
+<li><font color="blue">def getTableIDs(dbid)</font><font color="black">
+<br>Get a list of the dbid's of the child tables of an application.
+
+<li><font color="blue">def getNumTables(dbid)</font><font color="black">
+<br>Get the number of child tables of an application.
+
+<li><font color="blue">def getReportNames(dbid = @dbid)</font><font color="black">
+<br>Get a list of the names of the reports (i.e. queries) for a table
+
+<li><font color="blue">def toXML( tag, value = nil )</font><font color="black">
+<br>Returns the XML for a specific item included in a request to QuickBase.
+
+<li><font color="blue">def isValidFieldType?( type )</font><font color="black">
+<br>Returns whether a given string represents a valid QuickBase field type.
+
+<li><font color="blue">def isValidFieldProperty?( property )</font><font color="black">
+<br>Returns whether a given string represents a valid QuickBase field property.
+
+<li><font color="blue">def addFieldValuePair( name, fid, filename, value )</font><font color="black">
+<br>Adds a field value to the list of fields to be set by the next addRecord() or editRecord() call to QuickBase.
+<br>name - label of the field value to be set
+<br>fid - id of the field to be set
+ <br>filename - if the field is a file attachment field, the name of the file that should be displayed in QuickBase.
+ <br>value - the value to set in this field. If the field is a file attachment field, the name of the file that should be uploaded into QuickBase.
+
+<li><font color="blue">def replaceFieldValuePair( name, fid, filename, value )</font><font color="black">
+<br>Replaces a field value in the list of fields to be set by the next addRecord() or editRecord() call to QuickBase.
+
+<li><font color="blue">def clearFieldValuePairList</font><font color="black">
+<br>clearFieldValuePairList: empty the list of field values used for the next addRecord() or editRecord() call to QuickBase.
+
+<li><font color="blue">def verifyFieldList( fnames, fids = nil, dbid = @dbid )</font><font color="black">
+<br>Given an array of field names or field IDs and a table ID, builds an array of valid field IDs and field names.
+ <br>Throws an exception when an invalid name or ID is encountered.
+
+<li><font color="blue">def getQueryRequestXML( query = nil, qid = nil, qname = nil )</font><font color="black">
+<br>Builds the request XML for retrieving the results of a query.
+
+
+
+<li>
+<font color="blue">getColumnListForQuery( id, name )
+</font><font color="black">
+<br>
+Returns the clist associated with a query.
+
+
+<li>
+<font color="blue">
+def getSortListForQuery( id, name )
+</font><font color="black">
+<br>
+Returns the slist associated with a query.
+
+
+<li>
+<font color="blue">
+verifyQueryOperator( operator, fieldType )
+</font><font color="black">
+<br>
+Returns a valid query operator.
+
+<li>
+<font color="blue">
+def lookupBaseFieldTypeByName( fieldName )
+</font><font color="black">
+<br>
+Get a field's base type using its name.
+
+<li>
+<font color="blue">
+def lookupFieldTypeByName( fieldName )
+</font><font color="black">
+<br>
+Get a field's type using its name.
+
+
+
+<li><font color="blue">def formatImportCSV( csv )</font><font color="black">
+<br>Returns the string required for emebedding CSV data in a request.
+
+<li><font color="blue">def formatDate( milliseconds, fmtString = nil, addDay = false )</font><font color="black">
+<br>Returns the humad-readable string represntation of a date, given the milliseconds version of the date.  
+<br>Also needed for requests to QuickBase.
+
+<li><font color="blue">def formatDuration( value, option = "hours" )</font><font color="black">
+<br>Converts milliseconds to hours and returns the value as a string.
+
+<li>
+<font color="blue">
+def formatTimeOfDay(milliseconds, format = "%I:%M %p" )
+</font><font color="black">
+<br>
+Returns a string format for a time of day value.
+
+
+<li>
+<font color="blue">
+def formatCurrency( value, options = nil )
+</font><font color="black">
+<br>
+Returns a string format for a currency value.
+
+<li>
+<font color="blue">
+def formatPercent( value, options = nil )
+</font><font color="black">
+<br>
+Returns a string format for a percent value, given the data from QuickBase.
+
+<li><font color="blue">def dateToMS( dateString )</font><font color="black">
+<br>Returns the milliseconds representation of a date specified in mm-dd-yyyy format.
+
+<li><font color="blue">def splitString( string, fieldSeparator = "," )</font><font color="black">
+<br>Converts a string into an array, given a field separator.
+<br>'"' followed by the field separator are treated the same way as just the field separator.
+
+<li><font color="blue">def escapeXML( char )</font><font color="black">
+<br>returns the URL-encoded version of a non-printing character.
+
+<li><font color="blue">def encodingStrings( reverse = false )</font><font color="black">
+<li>Returns the list of string substitutions to make to encode or decode field values used in XML.
+
+<li><font color="blue">def encodeXML( text, doNPChars = false )</font><font color="black">
+<br>Modify the given string for use as a XML field value.
+
+<li><font color="blue">def decodeXML( text )</font><font color="black">
+<br>Modify the given XML field value for use as a string.
+
+<li><font color="blue">def resetrid</font><font color="black">
+<br>Set the @rid (active record ID) member variable to nil.
+
+<li><font color="blue">def resetfid</font><font color="black">
+<br>set the @fid (active field ID) member variable to nil.
+
+<li><font color="blue">def onChangedDbid</font><font color="black">
+<br>Reset appropriate member variables after a different table is accessed.
+
+<li><font color="blue">def subscribe( event, handler )</font><font color="black">
+<br>Subscribe to a specified event published by QuickBase::Client.
+
+<li><font color="blue">def setLogger( logger )</font><font color="black">
+<br>Set the instance of a QuickBase::Logger to be used by QuickBase::Client.
+<br>Closes the open log file if necessary.
+
+</ol>
+<br>
+<b>Nested class</b>
+<br>
+<br>
+<font color="blue">class FieldValuePairXML</font><font color="black">
+<br>Encapsulates field values to be set and file uploads to be made during addRecord() and editRecord() calls.
+<br>
+<h3>Class QuickBase::EventHandler</h3>
+<pre>
+To subscribe to events fired by the Client class, derive from this 
+class, override handle( event ), and call subscribe( event, self ).  
+See Client.subscribe() for a list of events.
+</pre>
+<p>
+<b>Methods</b>
+<ol>
+<li><font color="blue">def handle( event )</font><font color="black">
+<br>Override this method to be notified of events fired by QuickBase::Client.
+Events fired are :-
+<ol>
+<li>onSendRequest 
+<li>onProcessResponse 
+<li>onSetActiveTable
+<li>onRequestSucceeded 
+<li>onRequestFailed 
+<li>onSetActiveRecord
+<li>onSetActiveField
+</ol>
+</ol>
+
+<h3>Class QuickBase::Logger</h3>
+<pre>
+To log QuickBase requests and responses to a file, make an instance
+of this class and call Client.setLogger( loggerInstance ).
+Call Client.setLogger( nil ) to turn logging off.
+The log file is written in CSV format to make it importable by QuickBase.
+</pre>
+<b>Methods</b>
+<ol>
+<li><font color="blue">def initialize( filename, append = true )</font><font color="black">
+<br>Opens filename as a log file.  filename will be appended to if it already exists, unless append is false.
+<li><font color="blue">def closeLogFile()</font><font color="black">
+<br>Closes the log file and resets all variables.
+<li><font color="blue">def changeLogFile( filename, append = true )</font><font color="black">
+<br>Closes a log file that may already be open and opens filename.  filename will be appended to if it
+already exists, unless append is false.
+<li><font color="blue">def logRequest( dbidForRequestURL, api_Request, requestXML )</font><font color="black">
+<br>Called by QuickBase::Client to log requests to QuickBase.
+<li><font color="blue">def logResponse( error, responseXML )</font><font color="black">
+<br>Called by QuickBase::Client to log responses from QuickBase.
+<li><font color="blue">def getTimeString()</font><font color="black">
+<br>Called by the logger to format a timestamp string to write to the log file.
+</ol>
+
+<h3>Class QuickBase::CommandLineClient  &lt; Client</h3>
+<pre>
+This implements an extensible command line interface to QuickBase.
+Use setCommand() and setCommandAlias() to extend or modify the interface. 
+
+Call run() to use the command line interactively.
+Call run( filename ) to run the commands in a file.  
+Commands entered during an interactive session can be recorded to a file.
+
+In addition to the @commands loaded in initialize(), any public method 
+from class Client can be used as a command, and any line of ruby code 
+can be executed.
+</pre>
+<br>
+<b>Nested class</b>
+<br>
+<br>
+<font color="blue">class Command</font><font color="black">
+<br>
+<br>Contains the data for commands:- 
+<br>
+<ol>
+<li><font color="blue">name</font><font color="black"> - name of the command shown to the user
+<li><font color="blue">desc</font><font color="black"> - description of the command shown to the user
+<li><font color="blue">prerequisite</font><font color="black"> - boolean expression controlling the availability of the command
+<li><font color="blue">args</font><font color="black"> - list of required parameters displayed to the user
+<li><font color="blue">code</font><font color="black"> - array of methods to call to run when this command is selected.  Only the first method can expect any parameters.
+<li><font color="blue">prompt</font><font color="black"> - a prompt string that should accompany the command.  nil by default.
+</ol>
+<br>
+<b>Methods</b>
+<ol>
+<li><font color="blue">def initialize()</font><font color="black">
+<br>Loads the default list of commands and their aliases.
+<li><font color="blue">def showUsage()</font><font color="black">
+<br>Displays a usage message.
+<li><font color="blue">def setCommand( name, desc, prerequisite, args, code, prompt = nil )</font><font color="black">
+<br>Add a command to the list of commands avaliable to the user.
+<li><font color="blue">def setCommandAlias( anAlias, cmd )</font><font color="black">
+<br>Sets the alias (abbreviation) for a command.
+<li><font color="blue">def evalAvailableCommands()</font><font color="black">
+<br>Build the list of available commands by testing the boolean expression associated with each command.
+<li><font color="blue">def cmdString( command, include_desc = true )</font><font color="black">
+<br>Builds the representation of a command displayed to the user.
+<li><font color="blue">def showAvailableCommands()</font><font color="black">
+<br>Builds the list of available commands and displays them.
+<li><font color="blue">def prompt( promptString )</font><font color="black">
+<br>If promptString is not nil, display the prompt string and wait for input from the user.
+<li><font color="blue">def run( filename = nil )</font><font color="black">
+<br>Runs the commands in a file, or runs a loop that displays the list of available commands and processes
+the user's input.
+</ol>
+
+
+<h3>Class QuickBase::WebClient &lt; CommandLineClient</h3>
+<pre>
+A web server that responds to requests to run command files 
+present on the local machine. This extends QuickBase via URLs on web pages.
+
+e.g. if there is an 'uploadSpreadsheet.qbc' command file next to this QuickBaseClient.rb 
+file on your machine, it can be run from a web page by starting 'WebClient.new' on your 
+machine and placing 'http://127.0.0.1:2358/qbc/uploadSpreadsheet.qbc' in a link on the
+web page.
+  
+Any request that does not include "/qbc/" will shut down the server.   
+</pre>
+<b>Methods</b>
+<ol>
+<li><font color="blue">def initialize( runNow = true, ipAddress = 'localhost', port = 2358 )</font><font color="black">
+<br>Set the IP address and port, on which to run the web server, and optionally start the server.
+The IP address must be a valid address for the machine on which this server is run.
+<li><font color="blue">def stop()</font><font color="black">
+<br>Stops the web server.
+<li><font color="blue">def start( ipAddress = 'localhost', port = 2358 )</font><font color="black">
+<br>Starts the web server on a separate thread and processes requests to run command files.
+If the server is already running, it will be restarted.
+</ol>
+
+<h2>Additional Ruby classes that build on <a href="QuickBaseClient.rb">QuickBase::Client</a></h2>
+
+<ol>
+<li><a href="QuickBaseEventNotifier.rb">QuickBaseEventNotifier.rb</a>
+<li><a href="QuickBaseRSSGenerator.rb">QuickBaseRSSGenerator.rb</a>
+<li><a href="QuickBaseTwitterConnector.rb">QuickBaseTwitterConnector.rb</a>
+<li><a href="QuickBaseMisc.rb">QuickBaseMisc.rb</a>
+<li><a href="QuickBaseTextData.rb">QuickBaseTextData.rb</a>
+<li><a href="QuickBaseEmailer.rb">QuickBaseEmailer.rb</a>
+</ol>
+
+<h2>Appendices</h2>
+
+<h3>Appendix 1:  Submitting enhancement requests and bugs</h3>
+Please submit enhancement requests in the <a href="https://www.quickbase.com/db/8emtadvk?a=dr&r=ztj&rl=cjtm">QuickBase Community Forum</a>.
+
+<h3>Appendix 2:  To Do List and future directions</h3>
+<b>To Do:-</b>
+<ol>
+<li>Expand test code to cover all methods and the most common cases.
+<li>Make it as easy as possible for people to get started with QuickBaseClient.rb.
+</ol>
+<b>Future directions:-</b>
+<ol>
+<li>Add extensible classes to convert response XML to other formats. Start with the most useful formats.
+<li>Add extensible classes to convert data and code into requests. Start with the most useful formats.
+<li>Write a QuickBase adapter for Rails - DONE! Please see <a href="quickbase_adapter.rb.htm">quickbase_adapter.rb.htm</a>.
+</ol>
+<h3>Appendix 3: Design goals behind the creation of <a href="QuickBaseClient.rb">QuickBaseClient.rb</a></h3>
+<ol>
+<li>Since this project is being done outside normal work hours, the work is prioritized as if it 
+will have to stop at any time.
+<li>The first goal was to wrap the QuickBase HTTP API in a Ruby class in a way that minimizes the amount of additional documentation
+ needed by users of the Ruby class.  The assumption is that many developers will prefer working in Ruby to working in the other
+ QuickBase SDK languages.
+<li>The second goal is to write test code that reduces the need for manual regression testing of the Ruby class.
+<li>Next is the addition of methods that reduce the amount of code developers have to write to perform
+common tasks using QuickBaseClient.rb.  This will be ongoing.
+<li>Next is the implementation of a small program that provides almost immediate benefit to users.  The QuickBase::CommandLineClient
+serves this purpose and also helps in testing QuickBase::Client and understanding what additional functionality would
+be worth developing.
+</ol>
+</body>
+</html>

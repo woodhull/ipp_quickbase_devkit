@@ -1,0 +1,26 @@
+<h1> Issues starting with '<%= params[:s] %>'</h1>
+This view shows how to filter records using a Ruby regular expression.
+<hr>
+<table border="1">
+
+   <tr>
+      
+      <td><b>Issue Name</b></td>
+      <td><b>Description</b></td>
+      <td><b>Resolution</b></td>
+      <td><b>Priority</b></td>
+      
+   </tr>
+
+<% for issue in @issues do %>
+
+   <tr>
+      <td><%= issue["Issue Name"] %></td>
+      <td><%= issue["Description"] %></td>
+      <td><%= issue["Resolution"] %></td>
+      <td><%= issue["Priority"] %></td>
+   </tr>
+
+<% end %>
+
+</table>

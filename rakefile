@@ -1,0 +1,100 @@
+
+require 'rake'
+require 'rake/gempackagetask'
+require 'spec/rake/spectask'
+
+spec = Gem::Specification.new do |s|
+   s.rubyforge_project = "orphans" # prevents WARNING
+   
+   if RUBY_PLATFORM == "java" # jruby
+      s.name    = "ipp_quickbase_devkit_jruby" # saves people having to download additional jruby-specific gems 
+      s.description = "The ipp_quickbase_devkit_jruby wraps the QuickBase HTTP API and adds a lot of classes and methods to minimize the amount of code need to get useful things done."
+      s.add_dependency("json-jruby")
+      s.add_dependency("jruby-openssl")
+      s.rdoc_options = ["--line-numbers", "--inline-source", "--main", "README.rdoc", "--title", "ipp_quickbase_devkit_jruby: JRuby client for database applications on www.quickbase.com and workplace.intuit.com"]
+      s.post_install_message = %q{**************************************************
+
+  Thank you for installing ipp_quickbase_devkit_jruby.
+  Distributed under the Eclipse Public License Version 1.0.
+
+**************************************************
+}
+   else
+      s.name    = "ipp_quickbase_devkit"
+      s.description = "The ipp_quickbase_devkit wraps the QuickBase HTTP API and adds a lot of classes and methods to minimize the amount of code need to get useful things done."
+      s.add_dependency("json") if RUBY_VERSION.include?("1.8.")
+      s.rdoc_options = ["--line-numbers", "--inline-source", "--main", "README.rdoc", "--title", "ipp_quickbase_devkit: Ruby client for database applications on www.quickbase.com and workplace.intuit.com"]
+      s.post_install_message = %q{**************************************************
+
+  Thank you for installing ipp_quickbase_devkit.
+  Distributed under the Eclipse Public License Version 1.0.
+
+**************************************************
+}
+
+   end   
+   s.version  = "0.0.1"
+   s.date     =  "2009-07-01"
+   s.authors = ["Gareth Lewis"]
+   s.email = "dev-ipp_dev_kits@code.intuit.com"
+   s.summary = "The ipp_quickbase_devkit is a Ruby wrapper for the QuickBase HTTP API."
+   s.homepage = "https://code.intuit.com/sf/projects/ipp_dev_kits"
+   s.has_rdoc = true
+   s.extra_rdoc_files = ["LICENSE","README.rdoc"]
+   s.require_paths = ["lib"]
+   s.add_dependency("rspec", [">= 1.2.7"])
+   s.add_development_dependency("rspec", [">= 1.2.7"])
+   s.required_ruby_version = ">=1.8.6"
+   s.platform = Gem::Platform::RUBY
+   s.files = FileList["LICENSE","README.rdoc","rakefile","examples/**/*.","examples/**/*.*","doc/*.*","lib/*.rb","lib/*.qbc","test/*.rb","test/*.bat"].exclude(".svn").to_a
+end 
+
+Rake::GemPackageTask.new(spec).define
+
+Spec::Rake::SpecTask.new(:spec) do |t|
+  t.spec_files = FileList['spec_all_tests.rb']
+  t.ruby_opts = ['-C test']
+end
+
+desc 'Uninstall dev gem'
+task :uninstall_gem do
+  if RUBY_PLATFORM == "java"
+	   sh 'jruby -S gem uninstall ipp_quickbase_devkit_jruby'
+  else    
+	   sh 'gem uninstall ipp_quickbase_devkit'
+  end   
+end
+
+desc 'Build dev gem'
+task :build_gem do
+	Rake::Task[:repackage].invoke
+end
+
+desc 'Install dev gem'
+task :install_gem do
+   if RUBY_PLATFORM == "java"
+	    sh 'jruby -S gem install pkg/ipp_quickbase_devkit_jruby'
+   else   
+	    sh 'gem install pkg/ipp_quickbase_devkit'
+   end   
+end
+
+desc '(Default task) Uninstalls, rebuilds & installs gem from source'
+task :full_rebuild do
+	Rake::Task[:uninstall_gem].invoke
+	Rake::Task[:repackage].invoke
+	Rake::Task[:install_gem].invoke
+end
+
+desc 'Full rebuild, then run tests'
+task :full_rebuild_and_test do
+	Rake::Task[:full_rebuild].invoke
+	puts "**************************************************"
+	puts ""
+	puts "             Running unit tests"
+	puts ""
+	puts "**************************************************"
+	Rake::Task[:spec].invoke	
+end
+
+task :default => :full_rebuild

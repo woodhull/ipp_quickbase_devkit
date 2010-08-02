@@ -1,0 +1,27 @@
+<h1>My Open Projects</h1>
+
+This View shows how to display records using a QuickBase query and Rails methods to retrieve column
+ data.  Note that column names that contain spaces must be accessed using a string.  If you don't see any 
+ records listed below, add a Projects record in QuickBase and make yourself the Project Lead.
+
+<hr>
+
+<table border="1">
+
+   <tr>
+      <td><b>Name</b></td>
+      <td><b>Priority</b></td>
+      <td><b>Status</b></td>
+      <td><b>Percent Complete</b></td>
+   </tr>
+   
+   <% for project in @projects do %>
+      <tr>
+         <td><%= project.attributes["Project Name"] %></td>
+         <td><%= project.Priority %></td>
+         <td><%= project.Status %></td>
+         <td><%= project["Percent Complete"] %></td>
+      </tr>   
+   <% end %>
+
+</table>

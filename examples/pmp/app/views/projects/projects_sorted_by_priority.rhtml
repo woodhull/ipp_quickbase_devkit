@@ -1,0 +1,30 @@
+<h1>Projects sorted by Priority, displayed from left to right</h1>
+
+The model method <i>Projects.projects_sorted_by_priority</i>, in projects.rb, shows how to 
+get records using the low-level <i>execute</i> method from the QuickBase adapter. Note that using 
+<i>execute</i> effectively bypasses ActiveRecord, but you can access column values using Ruby's 
+Hash syntax, e.g. <i>project["Project Name"]</i>
+
+<hr>
+
+<table border="1">
+
+   <tr>
+      <td><b>Project Name</b></td>
+      <% for project in @projects do %>
+            <td><%= project["Project Name"] %></td>
+      <% end %>
+   </tr>
+   
+   <tr>
+      <td><b>Project Summary</b></td>
+      <% for project in @projects do %>
+            <td><%= project["Project Summary"] %></td>
+      <% end %>
+   </tr>
+   
+
+</table>
+
+
+

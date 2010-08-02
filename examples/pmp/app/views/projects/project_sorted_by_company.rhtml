@@ -1,0 +1,40 @@
+<h1>Project sorted by Company</h1>
+
+This View shows how to switch the rows and columns from a QuickBase Report.
+
+<hr>
+
+<table border="1">
+
+   <tr>
+      <td></td>
+      <% for project in @projects do %>
+         <td><b><%= project.Company %></b></td>
+       <% end %>  
+   </tr>
+
+   <tr>
+      <td><b>Project Name</b></td>
+      <% for project in @projects do %>
+            <td><%= project["Project Name"] %></td>
+      <% end %>
+   </tr>
+   
+   <tr>
+      <td><b>Project Priority</b></td>
+      <% for project in @projects do %>
+            <td><%= project.Priority %></td>
+      <% end %>
+   </tr>
+   
+   <tr>
+      <td><b>Project Status</b></td>
+      <% for project in @projects do %>
+            <td><%= project.Status %></td>
+      <% end %>
+   </tr>
+
+</table>
+
+
+

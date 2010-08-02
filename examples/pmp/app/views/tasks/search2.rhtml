@@ -1,0 +1,23 @@
+<h1>Tasks with Status = '<%= params[:status] %>'</h1>
+
+This View shows how to search QuickBase records using a simple SQL statement.
+<hr>
+
+<% fieldNames = Array["Project Name","Project Phase","Task Name","Milestone","Duration", "Start","Calculated Finish Date","Actual Finish Date","Days Overdue","% Complete","Status","Priority"] %>
+
+<table border="1">
+<tr>
+   <% fieldNames.each{|fieldName| %>
+      <td><b><%= fieldName %></b></td>
+   <% } %>
+</tr>
+
+<% for task in @tasks do %>
+   <tr>
+      <% fieldNames.each{ |fieldName| %>
+         <td><%= task[fieldName] %></td>
+      <% } %>
+   </tr>
+<% end %>
+
+</table>

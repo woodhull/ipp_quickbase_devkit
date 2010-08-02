@@ -1,0 +1,399 @@
+<html>
+<head>
+<title>
+QuickBase Adapter for Ruby on Rails
+</title>
+</head>
+<body>
+
+<h2>Overview</h2>
+The QuickBase Adapter for Ruby on Rails is primarily intended for use by developers who are probably already using 
+QuickBase, but who need to present QuickBase data in ways that aren't supported by the native QuickBase UI and need
+ to process the data in ways that aren't possible via the QuickBase UI. Developers have been able to do this using the HTML 
+ generated from the QuickBase API, combining it with JavaScript, simple HTML forms, using the SDK's provided by QuickBase, etc.
+However, being able to connect Rails to QuickBase, even in a limited fashion, opens up more options for QuickBase developers to 
+present and process QuickBase data in simple and powerful ways.
+
+<hr>
+
+<h2>Setting up</h2>
+<h3>Get the Ruby wrapper for the QuickBase API</h3>
+You probably already have this because you are reading this file.  
+The official home is <a href="https://www.quickbase.com/db/8emtadvk?a=dr&r=ztj&rl=cjtm">here</a>.
+Just download the QuickBaseClient.rb.zip file attached to that QuickBase record, and unzip it into 
+its own folder, eg. c:\quickbase\ruby.
+
+<h3>Install Ruby on Rails.</h3>
+If you develop on Windows, Instant Rails works great. 
+It's very fast to install and to get up and running.
+It's available <a href="http://instantrails.rubyforge.org/wiki/wiki.pl">here</a>. 
+<p>
+You can also get all the Rails components by following the instructions from <a href="http://www.rubyonrails.org/down">http://www.rubyonrails.org/down</a>.
+
+<h3>Learn the basics of Rails, if necessary</h3>
+If you're new to Rails, go through the exercises at the beginning of the excellent <a href="http://www.pragmaticprogrammer.com/title/rails/">'Agile Development with Rails'</a> book.
+The Rails homepage is <a href="http://www.rubyonrails.org/">http://www.rubyonrails.org/</a>.
+
+<h3>Put the quickbase_adapter.rb file in the right place.</h3>
+After installing Rails, search for the file <i>mysql_adapter.rb</i> on your machine.  It will be in the connection_adapters folder.
+Copy the quickbase_adapter.rb file into the <i>connection_adapters</i> folder. 
+
+<h3>Adjust your RUBYLIB environment variable, or edit quickbase_adapter.rb.</h3>
+Skip this step if you installed the QuickBaseClient using 'gem install ipp_quickbase_devkit'.
+The quickbase_adapter.rb file depends on the QuickBaseClient.rb file which you extracted from QuickBaseClient.rb.zip.
+Ruby will find the QuickBaseClient.rb file if you set a RUBYLIB environment variable on your machine to include the path to the 
+QuickBaseClient.rb file (e.g. <i>c:\quickbase\ruby</i>).  Alternatively, you can edit the quickbase_adapter.rb file and change
+the <i>require 'QuickBaseClient'</i> line to include the path to the QuickBaseClient.rb file (e.g. <i>require '\quickbase\ruby\QuickBaseClient'</i>).
+
+<h3>Make Rails aware of the QuickBase adapter</h3>
+Search for the active_record.rb file in your Rails installation.
+Inside the file, search for the line starting with '<i>RAILS_CONNECTION_ADAPTERS =%w(...)</i>'.
+If you don't find a line containing RAILS_CONNECTION_ADAPTERS, skip this step.
+Just before the closing ')', add <i> quickbase </i> to the list of adapters.
+
+<hr>
+
+<h2>Limitations</h2>
+QuickBase does not have an SQL API, and the API it does have can't be translated to the point where Rails 
+developers can pretend they are dealing with an SQL database. In particular, the QuickBase API doesn't (yet) allow you
+to add a table to an application; you can create a database (i.e. an 'application') with one table via the API, but you can't 
+add more tables to that database via the API.
+
+<h3>Can't create tables via SQL</h3>
+The adapter will not process SQL CREATE statements.  However, you can use the underlying QuickBase Ruby API to 
+create a QuickBase 'Single Table' Application and add fields and data to it.
+
+<h3>Doesn't support migrations.</h3>
+Rails migrations involve creating and dropping tables and/or columns.
+Since the adapter doesn't support creating tables using SQL, migrations aren't supported.
+Also, as part of migrations, Rails expects to be able to retrieve and modify database structures by reading schema 
+information from the database.  While this may be possible at some future date, this first release of the QuickBase adapter 
+does not attempt to translate Rails' schema manipulation into QuickBase API calls.
+
+<h3>Very limited SQL SELECT support.</h3>
+SELECT statements generated from Rails are translated by the QuickBase API into QuickBase's 'native' query language.
+The QuickBase query language doesn't support the equivalents of JOIN, UNION, MIN, MAX, AVERAGE, COUNT, and many
+other such SELECT clauses and functions.  However, you can overcome these limitations using QuickBase
+queries instead of SQL SELECT statements, and by setting up relationships between tables in QuickBase.
+
+<h3>Not as fast as other databases</h3>
+QuickBase is not on your server and Rails has to communicate with it by sending and receiving XML over the internet.
+This isn't going to be as fast as using one of the standard SQL databases installed on the same server as Rails or within 
+your firewall.
+
+<h3>Difficult to switch to another database or from another database</h3>
+QuickBase is not an SQL database and the adapter doesn't support migrations.
+This makes it very difficult to swap out QuickBase from your application and replace it with MySQL or 
+any other database.  The adapter is really intended for people who are already getting
+a lot of value from QuickBase itself and want to extend that value by connecting QuickBase to the Rails 
+framework. 
+<p>
+If you want to switch from an SQL database to QuickBase, the QuickBase Ruby API can help copy
+the data across, but wait until you've finished that job before creating your Rails application.
+
+<hr>
+
+<h2>Recommendations</h2>
+
+<h3>Take full advantage of the things that are easy to do in QuickBase</h3>
+QuickBase is great because of how easy it is to create tables, fields, reports, email notifications, etc.
+Don't spend time doing work in Rails that is even easier to do in QuickBase.
+
+<h3>Retrieve data using QuickBase queries instead of SQL</h3>
+This will avoid all possible problems with SQL SELECT statements generated by Rails.
+Queries will also run faster.
+(See same subject in 'Goodies' section below.)
+
+<h3>Define table relationships in QuickBase rather than in Rails</h3>
+If you need to display and process records composed of fields from multi-tables, start in QuickBase 
+ by creating relationships between tables, using lookup fields in Reports you define in QuickBase, then 
+ read the data into Rails by using those Reports.  This will be simpler than defining table relationships 
+ in Rails.
+
+<h3>Rails likes models to be singular and tables to be plural</h3>
+If you use Rails scaffolds to get applications up and running quickly, don't forget that the Rails convention is
+for model names to be singular and table names to be plural.  e.g. if you have a table of assets, name
+the QuickBase table <i>Assets</i> and name your model <i>Asset</i>.  You can turn off this behavior 
+in Rails using <i>ActiveRecord::Base.pluralize_table_names = false</i>.
+
+<h3>Don't use spaces in your table and field names</h3>
+QuickBase allows this, but SQL doesn't.  If you don't actually use any code that generates SQL 
+statements, you don't have to worry about this.
+
+<h3>Don't change your table or field names after you've written code to access them</h3>
+This recommendation shouldn't be unique to users of the QuickBase adapter; your existing 
+code will probably stop working if you do this.
+
+<h3>Use unique names for your QuickBase applications and tables</h3>
+Doing this will ensure that you can connect to tables using their names rather than their QuickBase ID's, even
+though it's not a major design flaw to use the ID.
+
+<h3>Use lowercase field names</h3>
+If your users won't be viewing anything in QuickBase itself, using lowercase field names will make it easier to
+use default Rails behavior.
+
+<hr>
+
+<h2>Goodies for QuickBase developers</h2>
+
+<h3>Call any QuickBase API method from your model or template code</h3>
+In addition to wrapping all the QuickBase HTTP API calls described in the reference document  
+ <a href="https://www.quickbase.com/up/6mztyxu8/g/rc7/en/va/QuickBaseAPI.htm">here</a>, the Ruby wrapper for the 
+ QuickBase API adds a number of helper methods designed reduce the amount of code you have to write
+ to retrieve, format, manipulate and update QuickBase data. The Ruby wrapper can be accessed directly
+ using <i>ActiveRecord::Base.raw_connection</i>; this will be an instance of the QuickBase::Client class
+ from the QuickBaseClient.rb file. Some particularly useful methods are:-
+ <ul>
+ <li>getAllValuesForFieldsAsArray - get a list of records as an Array of Hashes.
+ <li>iterateRecords - loop through the records returned by a QuickBase query. Use
+ it in view templates if you can live with bending the MVC paradigm a bit, or accumulate the records 
+ into an @array in your controller and access that from your view.
+ <li>getFilteredRecords - filter records using Ruby regular expressions. 
+ This can't be done within QuickBase and is very difficult to do with SQL.
+ <li>getJoinRecords - get records joined from multiple tables.  This makes up for 
+ not having the SQL version of JOIN.
+ <li>getUnionRecords - comparable to an SQL UNION .
+ <li>purgeRecords - remove all records from a table.
+ <li>setActiveRecord - set the record ID for subsequent record-specific calls, such as setFieldValues.
+ <li>setFieldValues - modify the current record using a list of field/value pairs.
+ <li>editRecords - modify all the records returned by a query using a list of field/value pairs.
+ <li>min,max,count,sum,average - SQL-type functions that are either impossible or difficult to do within
+ QuickBase or using the basic QuickBase API.
+ <li>applyPercentToRecords, applyDeviationToRecords - compute and set percentage and deviation values across multiple records. 
+ The QuickBase UI doesn't support 'multi-record' formulas or calculations such as these.  
+ </ul>
+ <p>
+ In addition to these and other methods which can be found in the QuickBaseClient.rb file, the Ruby wrapper comes with
+ a few other utility classes designed to extend the usefulness of QuickBase beyond its UI.  These include an
+ RSS generator, for generating RSS from multiple tables, and a QuickBase event notifier that can run ruby code when
+ an event occurs in a QuickBase table or record.
+ </p>
+ In addition to calling these methods using the QuickBase::Client instance returned from <i>ActiveRecord::Base.raw_connection</i>,
+  model classes (i.e. classes derived from <i>ActiveRecord</i>) can run methods using the <i>connection.execute</i> method. In 'normal' 
+  Rails adapters, the <i>execute</i> method is provided so you can send any SQL string directly to your database. 
+  The equivalent of this in the QuickBase adapter is to give you direct access to methods in the QuickBase::Client class.  
+  A simple example of this is <i>connection.execute( %q{purgeRecords("jdhfsffee")})</i>, which would remove all records from the 
+  table with the QuickBase ID of jdhfsffee.
+
+<h3>Retrieve data using QuickBase queries instead of SQL</h3>
+If you use Rails' <i>find_by_sql</i> method and send it the name of a Report you've defined in QuickBase, or a query
+expressed in the QuickBase API query language, rather than an actual SQL SELECT statement, the adapter will
+return the data into an array of field/value Hashes as if you had used a SELECT statement.  
+An typical example is <i>find_by_sql("List All")</i>. This example will work if your model's class name matches 
+your QuickBase table name.
+Note that Rails generates a SELECT statement whenever you use any kind of <i>find</i> method.  
+<p>
+You can control which table to query by inserting the table name or QuickBase database ID in front of the 
+query, e.g. <i>find_by_sql("Assets:List All")</i>, or <i>find_by_sql("bb737sr8x:List All")</i>. 
+The adapater will first look in the current application for the 'Assets' table, then for an application named 'Assets', then 
+finally it will attempt to find the table with 'Assets' as the ID.  Of course, the second example (bb737sr8x) is more
+likely to succeed when the adapter looks for a QuickBase table ID.  This is useful if your model's class name is different 
+from the corresponding QuickBase table name.
+<p>
+Thanks to a sneaky trick in the QuickBase adapter, if your model class reads fields from a <i>different</i> 
+table from the QuickBase table it is associated  with, you can still retrieve field values using Active 
+Record's clever <i>record.field</i> syntax.
+
+<h3>Use QuickBase field ID's in SQL SELECT statements</h3>
+QuickBase fields all have an ID that doesn't change when you change the field's name.
+When the QuickBase::Client parses an SQL statement, it will understand field ID's if you use them instead of
+field names.  It works for both the columns to SELECT and the columns to ORDER BY.  You may be able
+to use this to process QuickBase fields with spaces in their names. 
+An example would be <i>SELECT 3 FROM Assets</i> - '3' is always the 'Record ID#' field in QuickBase.
+
+<h3>Display the QuickBase requests and responses</h3>
+Put <i>printRequestsAndResponses: true</i> in your database.yml to see the XML sent to
+QuickBase and received from QuickBase.  This is very useful for debugging.  The information
+ will be displayed in your Rails 'Console' window.
+
+<h3>Cache QuickBase schemas</h3>
+Put <i>cacheSchemas: true</i> in your database.yml if you are <i>sure</i> that the 
+schemas of the QuickBase tables used by your Rails application will not change
+while your application is running.  This will significantly reduce the number of 
+over-the-wire requests the adapter has to make to QuickBase.
+
+<h3>Specify the precision of numeric fields in database.yml</h3>
+QuickBase apparently doesn't limit the size of numeric fields. 
+To specify the precision of all 'decimal' fields in your application, put (e.g.) <i>decimalPrecision: 32</i>
+in database.yml.
+
+<h3>Specifiy the database using the QuickBase ID instead of the application name</h3>
+In your application's database.yml file, you can use a QuickBase DBID instead of a QuickBase
+application name. e.g. <i>database: bbtt9cjr6</i>. 
+
+<hr>
+
+<h2>Sample Rails+QuickBase applications</h2>
+
+<b><i>This section is Under Construction ... not ready yet!</i></b>
+<h3>Project Manager Plus</h3>
+This application demontrates various ways of retrieving and displaying data from QuickBase.
+<ol>
+<li>Go the the <a href="https://www.quickbase.com/db/bbtt9cjr6">QuickBase Application Library</a>.
+<li>The Project Manager Plus application is <a href="https://www.quickbase.com/db/bbtt9cjr7?a=dr&rid=40">here</a>.
+<li>Click on the <i>Get App</i> button to copy it to your QuickBase account.
+<li>After you've copied it, be careful not to delete any of the sample data in the tables, and avoid modifying the definition 
+of any of the tables and fields. It's OK to add records to any of the tables.
+<li>Unzip the pmp.zip file into your <i>rails_apps</i> folder. You should see the usual set of folders, with several .rb files
+ in the ..\pmp\app\controllers, ..\pmp\app\models, ..\pmp\app\views folders.
+<li>In the ..\pmp\config\ folder, open the database.yml file and change the username and password to your 
+QuickBase username and password.
+<li>Start Rails with the usual <i>ruby script/server</i> command.
+<li>Point your browser at the appropriate host and port, e.g. <i>http://localhost:3000/</i>, to connect to Rails.
+<li>Click on the links on the left of the screen to see different ways of retrieving records from QuickBase.
+The pages are deliberately uninteresting in appearance in order to simplify the MVC code to focus on reading records.
+</ol>
+
+<h3>Contacts database</h3>
+This application demonstrates basic CRUD operations, and how to generate a QuickBase database and a Rails app for it.
+
+<ol>
+<li>Put the <i>QuickBaseContactsAppBuilder.rb</i> file in your rails_apps folder.
+<li>From the command line in the rails_apps folder, type <i>ruby QuickBaseContactsAppBuilder.rb username password</i>. 
+<i>username</i> and <i>password</i> should be your QuickBase username and password.  This should generate a rails 
+app named <i>&lt;username&gt;_contacts</i> and an application in QuickBase with the same name.  The QuickBase 
+application is a single table application.
+<li>From the <i>&lt;username&gt;_contacts</i> folder, run <i>ruby script/server</i>.
+<li>Point your browser at the appropriate host and port, e.g. <i>http://localhost:3000/</i>, to connect to Rails.
+</ol>
+
+<hr>
+
+<h2>Under the Hood</h2>
+
+The Ruby wrapper for the QuickBase API has evolved over 18 months from being a thin wrapper around the
+QuickBase HTTP API to a small library of methods that reduce the work you have to do to get common and 
+important things done using QuickBase.  Several methods were added to make the QuickBase Rails adapter 
+work, so the adapter could remain small and the Ruby wrapper could provide more functionality to anyone
+using it without Rails. 
+<p>
+One could argue that the QuickBase API could be used directly from within Rails models, views 
+and controllers without going through the adapter.  That is certainly true and some applications might work better that way.  
+However, the adapter helps developers work more in the 'Rails way' and definitely saves time as you add more Rails applications.
+It's also technically possible to largely bypass Active Record and use the Rails MVC framework by processing lists of records
+from QuickBase as Arrays of Hashes, but you will lose the benefits of Active Record by doing this.
+
+<h3>Applications and Tables</h3>
+
+As with all the Rails adapters, the QuickBase adapter encapsulates the over-the-wire connection to the database so that
+the database.yml file in your application is the only thing you have to modify to connect to the appropriate QuickBase 
+application, e.g. -
+
+<pre>
+
+development:
+  adapter: quickbase
+  database: myQuickBaseApplication
+  username: myQuickBaseUsername
+  password: myQuickBasePassword
+  
+</pre>
+
+This is enough information for the QuickBase adapter to create a QuickBase::Client that connects to your QuickBase
+application using a valid username and password.  The QuickBase::Client connection is then accessible in your Rails code
+using <i>ActiveRecord::Base.raw_connection</i>.
+
+<p>
+A QuickBase 'application' is a set of one or more tables accessible to a selected group of users via a 'Dashboard' and a menu.
+However, the QuickBase API treats tables as independent things and 'applications' are only visible to the API as a parent table
+with a set of child tables.  If your application is a 'Single-table' application, the API sees the application as just a table.  With applications
+that start out as a 'Single-table' application then later become 'Multi-table', the name of the application is also the name of 
+the 'Single' table you started with.  The 'database' line in your database.yml file can be the name of a application or a table.  Either way,
+the name of the application or table in your database.yml should be unique for the 'myQuickBaseUsername' user, to help avoid connecting to 
+the wrong table or application.  
+<p>
+When the QuickBase adapter processes an SQL SELECT statement, it uses the table name in the FROM clause to find the
+correct table in your application, by looking through the list of child tables if necessary.  As with all the QuickBase::Client
+methods that access tables, once you have accessed a table, that table is the default for any subsequent QuickBase::Client
+method calls. QuickBase::Client.dbid contains the ID of the last accessed QuickBase table.  This saves you having to find
+a table between every API call to do something with the same table.  
+<p>
+You can also access tables that aren't in the QuickBase application specified in database.yml if your model name matches 
+the name of a different application.  You can also access any QuickBase table from any application if you use QuickBase 
+queries instead of SQL SELECT statements.  This is not possible using the other SQL database Rails adapters . To see exactly
+ how the adapter does this, look at the <i>select</i> and <i>setActiveTable</i> methods in quickbase_adapter.rb.
+
+<h3>Columns and Fields</h3>
+The QuickBase adapter supports the Rails convention of dynamically reading the list of columns from the active table.
+In QuickBase, 'columns' are referred to as 'fields'. The adapter attempts to accomodate spaces you might be using 
+in your QuickBase field names, but spaces in field names might be a problem when you let Rails add or update QuickBase 
+records via SQL INSERT and UPDATE statements.
+<p>
+When fields are read from QuickBase and turned into columns for Rails, the adapter makes it's best guess as to the display format that
+should be used for each field, as well as the default value for each field.  The adapter assumes that numeric fields will not
+have decimal places unless the number of places is specificied in QuickBase.  Look at the <i>columns</i> method in quickbase_adapter.rb
+to see exactly what it does.
+<p>
+Note that if you use <i>cacheSchemas: true</i> in your database.yml, the adapter will retrieve each QuickBase table's
+schema only once, so it's a bad idea to remove or modify fields in those QuickBase tables while Rails is interacting
+with them. Using <i>cacheSchemas: true</i> can knock several seconds off the time it takes to read any amount of
+data from QuickBase.
+<p>
+When you let Rails find records via SQL SELECT (generated by <i>find</i> calls), or by using <i>find_by_sql</i> using
+a QuickBase query, the adapter copies the table's "Record ID#" field to an "id" column so that subsequent UPDATE and DELETE 
+calls will know what record to operate on.  If you retrieve records directly via the QuickBase::Client in your code, you may 
+also have to copy the key field to an "id" column in order to make subsequent UPDATE and DELETE calls to QuickBase 
+via the default Rails actions for editing and destroying records.
+<p>
+If your table has a key field that is different from the Record ID#, the adapter makes Rails aware that it is the primary key field.
+However, note that the Record ID# field, or whatever you may have renamed it to, is always used to retrieve and update specific records.
+<p>
+QuickBase tables all have a number of 'built-in' fields, which are read-only.  By default ,the QuickBase adapter makes these fields
+unavailable for editing in Rails by renaming those fields to make Rails exclude them from its list of 'content' columns. It 
+does this by appending "_id" the those fields' names. The 'built-in' fields are:-
+
+<ul>
+<li>Date Created
+<li>Date Modified
+<li>Record Owner
+<li>Last Modified By
+</ul>
+
+<p>
+<i>Record ID#</i> is also a 'built-in' QuickBase field but is usually copied to "id", as described above. 
+<p>
+
+QuickBase lets you change the name of these built-in fields, but the adapter looks at their ID's rather 
+than their names.   These fields can still be displayed in your views if you access them 
+using (e.g.) <i>record["Date Created"]</i>.
+
+<h3>Queries</h3>
+
+The QuickBase adapter's <i>select</i> method processes all queries.
+<ul>
+<li>
+A query string starting with <i>SELECT</i> is presumed to be an SQL SELECT statement.  
+The adapter sends this to the <i>QuickBase::Client.doSQLQuery()</i> method, in QuickBaseClient.rb.
+This method does its best to parse the SQL and translate it into a query expressed in the QuickBase query language.
+The only SQL keywords it can handle are <i>SELECT, count(*), FROM, WHERE, ORDER BY, LIMIT, OFFSET</i>.  
+The field names in the SELECT and WHERE clauses can be QuickBase field ID's instead of names, which is useful for
+ QuickBase field names that contain spaces.
+ <p>
+Any variation of the ActiveRecord <i>find</i> method will result in an SQL SELECT statement.
+For fields that do not contain spaces in their names, you can use ActiveRecord's 
+dynamic <i>find_by_??</i> and <i>find_all_by_??</i> methods, e.g. <i>find_all_by_status("Complete")</i>.
+<li>
+A query string starting with <i>{</i> and ending with <i>}</i> is assumed to be a query expressed in the QuickBase
+query language.  This is sent 'as is' to QuickBase.
+To understand the QuickBase query language, read the section towards the bottom of <a href="https://www.quickbase.com/up/6mztyxu8/g/rc7/en/va/QuickBaseAPI.htm">QuickBaseAPI.htm</a>.
+<li>
+Any other query string is assumed to be the name of a Report defined in QuickBase.  
+If the string contains a colon (':'), any text before the colon will be treated as the name or ID of the QuickBase 
+table to query.  Look at the adapter's <i>setActiveTable</i> method to understand how the correct QuickBase table 
+is located for the query.
+
+</ul>
+<p>
+The <i>select</i> method returns an Array of records, each record being a Hash of field/value pairs. 
+This is what ActiveRecord expects.  ActiveRecord expects each field to have a corresponding column; see the adapter's 
+<i>columns</i> method and its QuickBaseColumn class to understand how the adapter provides what ActiveRecord
+expects.
+<p>
+The raw data returned from QuickBase is not formatted as it appears in QuickBase. 
+E.g. date, currency and percent field values are unformatted.  The QuickBase::Client class formats
+these field values appropriately before returning them, but if you bypass ActiveRecord by accessing
+QuickBase::Client methods directly, or via the adapter's <i>execute</i> method, you must format
+the raw data in your code.  Rails has helper methods for formatting data.
+
+</body>
+</html>

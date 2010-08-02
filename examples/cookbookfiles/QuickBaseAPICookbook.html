@@ -1,0 +1,2590 @@
+<HTML><HEAD><TITLE>QuickBase API Cookbook v3</TITLE></HEAD><BODY><H1><a href="https://www.quickbase.com/db/bcdcajmrf">QuickBase API Cookbook v3</a></H1><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=116">Find QuickBase records by running a Windows batch file</a><h3>Keywords</h3>find records batch windows<br><h3>Problem:</h3>You want to find QuickBase records by typing a command at the Windows command prompt.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+def find_and_display_records
+  
+  puts &quot;Connecting to QuickBase...&quot;
+  qbc = QuickBase::Client.init({&quot;username&quot; =&gt; ARGV[0] ,&quot;password&quot; =&gt;  ARGV[1],&quot;org&quot; =&gt; ARGV[2]})
+  qbc.cacheSchemas=true
+  #qbc.printRequestsAndResponses=true
+  
+  puts &quot;Accessing table #{ARGV[3]}...&quot;
+  qbc.getSchema(ARGV[3])
+  
+  search_value = &quot;&quot;
+  (5..ARGV.length-1).each{|index|search_value &lt;&lt; &quot;#{qbc.encodeXML(ARGV[index])} &quot;}
+  search_value.gsub!(&quot;'&quot;,&quot;\\'&quot;)
+  search_value.strip!
+
+  print &quot;Searching for '#{search_value}' ...\n&quot; 
+  
+  query = &quot;&quot;
+  field_ids = ARGV[4].split(/\./)
+  field_ids.each{|fid| 
+    query &lt;&lt; &quot;{'#{fid}'.CT.'#{search_value}'}.OR.&quot; 
+    }
+    query.slice!(query.length-4,4)
+  
+  rids = qbc.getAllValuesForFieldsAsArray(ARGV[3],[&quot;3&quot;],query,nil,nil,&quot;3&quot;)
+  
+  if rids and rids.length &gt; 0
+    if rids.length &gt; 1  
+      puts &quot;Found #{rids.length} records. Retrieving HTML page...&quot;
+      qbc.cacheSchemas=true
+      html = qbc.genResultsTable(ARGV[3],query,qbc.getFieldIDs(qbc.dbid).join(&quot;.&quot;))
+      puts &quot;Creating quickbase_find_results.html...&quot;
+      File.open(&quot;quickbase_find_results.html&quot;,&quot;w&quot;){|f|f.write(html)}
+      puts &quot;Launching quickbase_find_results.html in browser...&quot;
+      system(&quot;start quickbase_find_results.html&quot;)  
+    elsif rids.length == 1 
+      puts &quot;Found one record. Displaying record for edit...&quot;
+      rid = rids[0][&quot;3&quot;]
+      puts &quot;Launching QuickBase in browser...&quot;
+      system(&quot;start https://www.quickbase.com/db/#{ARGV[3]}?a=er^&amp;rid=#{rid}^&amp;username=#{ARGV[0]}^&amp;password=#{ARGV[1]}&quot;)
+    end
+  else
+    puts &quot;Found no records. Launching QuickBase 'find' page...&quot;
+    system(&quot;start https://www.quickbase.com/db/#{ARGV[3]}?a=genadvfind^&amp;username=#{ARGV[0]}^&amp;password=#{ARGV[1]}&quot;)
+  end
+end
+
+if ARGV[5]
+  begin
+     find_and_display_records
+  rescue StandardError =&gt; error   
+     puts &quot;\n\nAn error occurred while looking for QuickBase records: #{error}\n\n&quot;
+  end
+else
+  puts &quot;\n\nUsage: quickbase_record_finder &lt;username&gt; &lt;password&gt; &lt;realm&gt; &lt;table_DBID&gt; &lt;field_IDs&gt; &lt;search_value&gt;&quot;
+  puts &quot;\ne.g: quickbase_record_finder fred.flintone@internet.com wilma www 8emtadvk 4.5.6 barney\n\n&quot;
+end
+</pre><br><h3>Discussion:</h3>Download and extract the attached quickbase_record_finder.zip into C:\.
+Modify the qbrf.bat file and put it in your Windows PATH.
+<br><h3>See Also:</h3><br><h3>Ingredients:</h3>, , <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=117">Dump the schema for a table into a file</a><h3>Keywords</h3>schema dump table<br><h3>Problem:</h3>You need to see the schema for a QuickBase table in a file rather than in QuickBase.<br><h3>Solution:</h3><pre>
+require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new(ARGV[0],ARGV[1])
+qbc.getSchema(ARGV[2])
+File.open(&quot;#{ARGV[2]}.schema.xml&quot;,&quot;w&quot;){|f|f.write(qbc.qdbapi)}
+
+# run this using 'ruby dumpSchema.rb &lt;username&gt; &lt;password&gt; &lt;table id&gt;'
+# e.g. 'ruby dumpSchema.rb fred@flinstone wilma 8emtadvk'
+
+
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="dumpSchema.rb">dumpSchema.rb</a><br><h3>Ingredients:</h3>, , <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=115">Retrieve records in JSON format</a><h3>Keywords</h3>JSON records<br><h3>Problem:</h3>You need records from QuickBase in JSON format, probably for displaying them on a web page.<br><h3>Solution:</h3><pre>require &quot;QuickBaseClient&quot;
+
+# print the list of QuickBase formula functions in JSON format:
+
+qbc=QuickBase::Client.new(ENV[&quot;quickbase_username&quot;],ENV[&quot;quickbase_password&quot;])
+puts qbc.getAllValuesForFieldsAsPrettyJSON(&quot;6ewwzuuj&quot;,[&quot;Function Name&quot;])
+</pre><br><h3>Discussion:</h3>getAllValuesForFieldsAsJSON runs the doQuery API call with all the parameters you need.
+getAllValuesForFieldsAsPrettyJSON returns more human-readable JSON.
+ <br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="getRecordsAsJSON.rb">getRecordsAsJSON.rb</a><br><h3>Ingredients:</h3>, , <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=114">Use object-oriented programming to interact with QuickBase</a><h3>Keywords</h3>object oriented<br><h3>Problem:</h3>You need to write code in an object-oriented style to interact with the tables, fields, records, queries, roles, users, variables, pages in a QuickBase application.<br><h3>Solution:</h3><pre>require 'QuickBaseObjects'
+
+qbob = QuickBase::Objects::Builder.new(&quot;username&quot;,&quot;password&quot;)
+  
+myApplication = qbob.application(&quot;My Application&quot;)
+  
+puts &quot;\n\nApplication name:\n&quot;
+puts myApplication.name
+
+puts &quot;\n\nApplication roles:\n&quot;
+myApplication.roles.each_value{|role|puts &quot;name: #{role.name}, id: #{role.id}, access: #{role.access}&quot;}
+
+puts &quot;\n\nApplication users:\n&quot;
+myApplication.users.each_value{|user|puts &quot;id: #{user.id}&quot;}
+
+puts &quot;\n\nApplication variables:\n&quot;
+myApplication.variables.each_value{|variable|puts &quot;#{variable.name}: #{variable.value}&quot;}
+
+puts &quot;\n\nValue of application variable 'TestVariable':\n&quot;
+puts myApplication.vTestVariable
+
+puts &quot;\n\nSet the value of application variable 'TestVariable':\n&quot;
+myApplication.vTestVariable=&quot;New value for test variable&quot;
+
+puts &quot;\n\nApplication pages:\n&quot;
+myApplication.pages.each_value{|page|puts page.name}
+
+puts &quot;\n\nDefault application page:\n&quot;
+puts myApplication.pDefault_Dashboard.name
+  
+puts &quot;\n\nTables from My Application:\n&quot;
+myApplication.tables.each_value{|table|puts table.name}
+  
+puts &quot;\n\nQueries from the Contacts table:\n&quot;
+myApplication.tContacts.queries.each_value{|query|puts query.name}
+
+puts &quot;\n\nProperties of the List All query from the Contacts table:\n&quot;
+myApplication.tContacts.qList_All.properties.each_pair{|key,value|puts &quot;#{key}: #{value}&quot; }
+
+puts &quot;\n\nNames from the List All query from the Contacts table:\n&quot;
+records = myApplication.tContacts.qList_All.run 
+records.each{|record| puts record.fName}
+
+puts &quot;\n\nColumns of the List All query from the Contacts table:\n&quot;
+puts myApplication.tContacts.qList_All.qyclst
+  
+puts &quot;\n\nFields from the Contacts table:\n&quot;
+myApplication.tContacts.fields.each_value{|field|puts field.name}
+  
+puts &quot;\n\nField ID of the Phone field in the Contacts table:\n&quot;
+puts myApplication.tContacts.fPhone.id
+
+puts &quot;\n\nName of field 7 from the Contacts table:\n&quot;
+puts myApplication.tContacts.fields[&quot;7&quot;].name
+
+</pre><br><h3>Discussion:</h3>The QuickBase::Objects::Builder class creates an Application object instance using the QuickBase schema for a specific application.  The application object will contain instances of table, query, variable, page, field, role, and user objects, each with methods matching the names assigned to these things in QuickBase.
+This is done accomplished Ruby's ability to add methods to objects dynamically, which means that every time you run QuickBase::Objects::Builder for an application, the result will be in synch with the latest definition of the application in QuickBase.
+ <br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="application_object.rb">application_object.rb</a><br><h3>Ingredients:</h3>, , <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=113">Use dynamic nature of Ruby to simplify retrieving data from QuickBase</a><h3>Keywords</h3>dynamic ruby <br><h3>Problem:</h3>Ruby has some wonderful dynamic features which can simplify your script code.  If you know precisely what data you want to retrieve, you can use 'hard-coded' dbid, record id, field id, etc in your code.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new
+
+puts &quot;\n\nDescription of QuickBase API Cookbook application:\n\n&quot;
+
+puts qbc.bcdcajmrf.xml_desc
+
+puts &quot;\n\nIngredients from the QuickBase API Cookbook:\n\n&quot;
+
+qbc.bcdcajmrh.qid_1.printChildElements(qbc.records)
+
+puts &quot;\n\nValue of field 6 from record 24105 in table 8emtadvk:\n\n&quot;
+
+puts qbc.dbid_8emtadvk.rid_24105.fid_6 # prints 'Ruby wrapper for QuickBase HTTP API'
+</pre><br><h3>Discussion:</h3>The following dynamic methods are available:
+
+dbid_?
+rid_? 
+qid_? 
+fid_?
+pageid_?
+userid_?
+vid_?
+import_?
+<br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="dynamicMethods.rb">dynamicMethods.rb</a><br><h3>Ingredients:</h3>, , <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=112">Use shortcuts to get values from XML returned from QuickBase</a><h3>Keywords</h3>xml shortcut<br><h3>Problem:</h3>You want to extract information that may only be available in the XML returned from QuickBase, but don't want to parse the XML.<br><h3>Solution:</h3><pre>require 'QuickbaseClient'
+
+qbc = QuickBase::Client.new
+
+qbc.getSchema(&quot;bbqm84dzy&quot;)
+puts &quot;\n\nSchema information for QuickBase Community Forum application:\n\n&quot;
+
+puts &quot;Application dbid: #{qbc.xml_app_id}&quot;
+puts &quot;Application description: #{qbc.xml_desc}&quot;
+puts &quot;XML for list of child tables: #{qbc.xml_chdbids}&quot;
+puts &quot;Last child table dbid: #{qbc.xml_chdbid}&quot;
+puts &quot;Application variables: #{qbc.xml_variables}&quot;
+
+qbc.getSchema(&quot;8emtadvk&quot;)
+puts &quot;\n\nSchema information for QuickBase Community Forum Messages table:\n\n&quot;
+
+puts &quot;Table name: #{qbc.xml_table.elements['name'].text}&quot;
+puts &quot;Field 1 name: #{qbc.xml_field('1').label}&quot;
+puts &quot;Field 2 name: #{qbc.xml_field('id','2').label}&quot;
+puts &quot;Field 3 reuired?: #{qbc.xml_field('3').required == 1}&quot;
+puts &quot;Query 2 criteria: #{qbc.xml_query('2').qycrit}&quot;
+puts &quot;XML for Query 1: #{qbc.xml_query('1')}&quot;
+puts &quot;Name for Query 1: #{qbc.xml_query('1').qyname}&quot;
+puts &quot;Next Record #ID will be: #{qbc.xml_next_record_id}&quot;
+
+qbc.getRecordInfo(&quot;8emtadvk&quot;,&quot;24105&quot;)
+puts &quot;\n\nInfo from Record 24105:\n\n&quot;
+
+puts &quot;Number of fields in record: #{qbc.xml_num_fields}&quot;
+puts &quot;XML of last field: #{qbc.xml_field}&quot;
+puts &quot;ID of last field: #{qbc.xml_field.fid}&quot;
+puts &quot;Name of last field: #{qbc.xml_field.elements['name'].text}&quot;
+</pre><br><h3>Discussion:</h3>Thanks to the wonders of the Ruby programming language, this can be done using the Ruby Wrapper for QuickBase by using a method in the format 'xml_?' - i.e. the method starts with xml_ and the XML element you are looking for is next, e.g. xml_desc. 
+<br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="xmlShortcuts.rb">xmlShortcuts.rb</a><br><h3>Ingredients:</h3>, , <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=107">Add a new QuickBase user and invite him to an application</a><h3>Keywords</h3>provision add invite user<br><h3>Problem:</h3>You need to add a new QuickBase user and invite the user to an existing application, via email.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+# Add a new user to QuickBase and email the user an invitation to an application
+
+qbc = QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;,&quot;My Fantastic Application&quot;)
+
+# Assume &quot;11&quot; is the id of the Participant role in &quot;My Fantastic Application&quot;
+
+qbc._provisionUser(&quot;11&quot;, &quot;fred_flintstone@internet.com&quot;, &quot;fred&quot;, &quot;flintstone&quot;)
+
+qbc._sendInvitation(qbc.userid)
+
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="provisionAndInviteNewUser.rb">provisionAndInviteNewUser.rb</a><br><h3>Ingredients:</h3>, , <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=111">Add/Change/Remove users from Roles</a><h3>Keywords</h3>add change remove user role<br><h3>Problem:</h3>You want to use the API to add people to a role, change their role, and remove them from a role.<br><h3>Solution:</h3><pre>
+require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;)
+
+# get Fred's QuickBase user info
+qbc.getUserInfo(&quot;fred_flintstone@internet.com&quot;)
+
+fredsUserID = qbc.userid.dup
+
+# Assume &quot;10&quot; is the id of the Viewer role in the application with the &quot;bbqm84dzy&quot; id
+qbc.addUserToRole( &quot;bbqm84dzy&quot;, fredsUserID, &quot;10&quot; )
+
+# Assume &quot;11&quot; is the id of the Participant role in the application with the &quot;bbqm84dzy&quot; id
+qbc.changeUserRole( &quot;bbqm84dzy&quot;, fredsUserID, &quot;10&quot;, &quot;11&quot; )
+
+# Remove Fred from the Participant Role
+qbc.removeUserFromRole( &quot;bbqm84dzy&quot;, fredsUserID, &quot;11&quot; )
+
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="addChangeRemoveUserRole.rb">addChangeRemoveUserRole.rb</a><br><h3>Ingredients:</h3>, , <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=110">Run a pre-defined Import via the API</a><h3>Keywords</h3>import <br><h3>Problem:</h3>You have defined an Import routine for a table, by going into QuickBase in a brrowser, and want to run the import automatically via the QuickBase API. <br><h3>Solution:</h3><pre>
+require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;)
+
+# run pre-defined Import #3 into table bcdcajmrf
+
+qbc.runImport(&quot;bcdcajmrf&quot;,&quot;3&quot;)
+
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="runImport.rb">runImport.rb</a><br><h3>Ingredients:</h3>, , <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=109">Get a list of the users and their roles in an application</a><h3>Keywords</h3>users roles <br><h3>Problem:</h3>You need a list of the users with access to an application, and what roles they are in.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;,&quot;My Application&quot;)
+
+qbc._userRoles() { |user|
+  qbc.printChildElements( user )
+}
+
+=begin
+
+Approximate output of above script:
+
+user (id=3453444.csw ):
+ name  = Fred Flintstone
+ lastAccess  = 1241207132457
+ firstName  = Fred
+ lastName  = Flintstone
+ roles :
+  role (id=18 ):
+   name  = Participant with Modify Own
+   access (id=3 ) = Basic Access
+user (id=345434444.bpw5 ):
+ name  = Wilma Flintstone
+ lastAccess  = 1240232570603
+ firstName  = Wilma
+ lastName  = Flintstone
+ roles :
+  role (id=18 ):
+   name  = Participant with Modify Own
+   access (id=3 ) = Basic Access
+user (id=24343444.bh ):
+ name  = Top Sales
+ lastAccess  = 1236700941307
+ firstName  = Top
+ lastName  = Sales
+ roles :
+  role (id=18 ):
+   name  = Participant with Modify Own
+   access (id=3 ) = Basic Access
+user (id=111.ckbs ):
+ name  = Anonymous
+ roles :
+  role (id=11 ):
+   name  = Participant
+   access (id=3 ) = Basic Access
+=end
+
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="userRoles.rb">userRoles.rb</a><br><h3>Ingredients:</h3>, , <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=108">Set the value of an application variable</a><h3>Keywords</h3>application variable set<br><h3>Problem:</h3>You need to set the value of an application variable using the QuickBase API<br><h3>Solution:</h3><pre>
+require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;,&quot;My Appointments&quot;)
+
+qbc._setDBvar(&quot;HourlyRate&quot;,&quot;350.00&quot;)
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="setDBvar.rb">setDBvar.rb</a><br><h3>Ingredients:</h3>, , <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=106">Get the role of a particular user in a particular application</a><h3>Keywords</h3>user role application<br><h3>Problem:</h3>You need to know the Role of a particular user in a particular application.<br><h3>Solution:</h3><pre>
+require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;)
+
+qbc.getUserInfo( &quot;fred_flinstone@internet.com&quot;)
+
+qbc.getUserRole(&quot;bbqm84dzy&quot;,qbc.userid)
+
+puts &quot;user id  : #{qbc.userid}&quot;
+puts &quot;user name: #{qbc.username}&quot;
+puts &quot;role id  : #{qbc.roleid}&quot;
+puts &quot;role name: #{qbc.rolename}&quot;
+puts &quot;access id: #{qbc.accessid}&quot;
+puts &quot;access   : #{qbc.access}&quot;
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="getUserRole.rb">getUserRole.rb</a><br><h3>Ingredients:</h3>, , <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=105">Get date/time information about an application</a><h3>Keywords</h3>date time <br><h3>Problem:</h3>You need to know the time that requests and changes were last made to an application, and the next time that an API request will be allowed to be made to the application.<br><h3>Solution:</h3><pre>
+
+require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new
+
+puts &quot;\n\nDate/time information about the QuickBase Community Forum:\n\n&quot;
+
+qbc.getAppDTMInfo(&quot;bbqm84dzy&quot;)
+
+puts &quot;Time of request                : #{qbc.formatFieldValue(qbc.requestTime.text,'timestamp')}&quot;
+puts &quot;Time next request allowed      : #{qbc.formatFieldValue(qbc.requestNextAllowedTime.text,'timestamp')}&quot;
+puts &quot;Time application last modified : #{qbc.formatFieldValue(qbc.lastModifiedTime,'timestamp')}&quot;
+puts &quot;Time any record last modified  : #{qbc.formatFieldValue(qbc.lastRecModTime,'timestamp')}&quot;
+
+   
+=begin
+
+Output of the above script:
+
+Date/time information about the QuickBase Community Forum:
+
+Time of request                : 05-03-2009 03:52 PM
+Time next request allowed      : 05-03-2009 03:52 PM
+Time application last modified : 03-26-2009 01:55 PM
+Time any record last modified  : 05-02-2009 10:10 AM
+
+=end
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="getAppDTMInfo.rb">getAppDTMInfo.rb</a><br><h3>Ingredients:</h3>, , <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=104">Add a table to an application</a><h3>Keywords</h3>add create table<br><h3>Problem:</h3>You need to add a table to an existing application using the QuickBase API<br><h3>Solution:</h3><pre>
+require 'QuickBaseClient'
+
+# Add an Authors table to a Books application
+
+qbc = QuickBase::Client.new( &quot;username&quot;,&quot;password&quot;,&quot;Books&quot;)
+
+qbc.createTable(&quot;Authors&quot;)
+
+qbc._addField(&quot;Name&quot;, &quot;text&quot;)
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="createTable.rb">createTable.rb</a><br><h3>Ingredients:</h3>, , <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=103">Get informaton about a specific QuickBase user</a><h3>Keywords</h3>user info email<br><h3>Problem:</h3>You know a particular QuickBase user's email address and need to get other information about that user from QuickBase.<br><h3>Solution:</h3><pre>
+require 'QuickBaseClient'
+
+def displayUserInfo( qbc, emailAddress = nil)
+  
+  qbc.getUserInfo emailAddress
+
+  puts &quot;name        : #{qbc.name}&quot;
+  puts &quot;first name  : #{qbc.firstName}&quot;
+  puts &quot;last name   : #{qbc.lastName}&quot;
+  puts &quot;login       : #{qbc.login}&quot;
+  puts &quot;email       : #{qbc.email}&quot;
+  puts &quot;screen name : #{qbc.screenName}&quot;
+  puts &quot;externalAuth: #{qbc.externalAuth}&quot;
+  puts &quot;user id     : #{qbc.userid}&quot;
+
+end
+
+
+qbc = QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;)
+
+puts &quot;\n\nInformation in QuickBase about the person running this script:\n\n&quot;
+displayUserInfo(qbc)
+
+puts &quot;\n\nInformation in QuickBase about fred_flinstone@internet.com:\n\n&quot;
+displayUserInfo(qbc, &quot;fred_flinstone@internet.com&quot;)
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="getUserInfo.rb">getUserInfo.rb</a><br><h3>Ingredients:</h3>, , <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=102">Get the list of Roles in an application</a><h3>Keywords</h3>role list <br><h3>Problem:</h3>You need the list of Roles in an application in order to add someone to a role<br><h3>Solution:</h3><pre>
+require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new
+
+puts &quot;\nRoles in the QuickBase Community Forum\n\n&quot;
+
+qbc.getRoleInfo(&quot;bbqm84dzy&quot;) { |role|
+  puts &quot;id: #{role.attributes['id']}&quot;
+  puts &quot;name: #{role.elements['name'].text}&quot;
+  puts &quot;access id: #{role.elements['access'].attributes['id']}&quot;
+  puts &quot;access name: #{role.elements['access'].text}&quot;
+  puts &quot;=============================&quot;
+}
+
+=begin
+
+Output of the above script:
+
+Roles in the QuickBase Community Forum
+
+id: 10
+name: Viewer
+access id: 3
+access name: Basic Access
+=============================
+id: 11
+name: Participant
+access id: 3
+access name: Basic Access
+=============================
+id: 12
+name: Administrator
+access id: 1
+access name: Administrator
+=============================
+id: 17
+name: Product Manager
+access id: 1
+access name: Administrator
+=============================
+id: 18
+name: Participant with Modify Own
+access id: 3
+access name: Basic Access
+=============================
+
+=end
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="getRoleInfo.rb">getRoleInfo.rb</a><br><h3>Ingredients:</h3>, , <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=5">Create an RSS feed using data from multiple QuickBase tables</a><h3>Keywords</h3>RSS feed<br><h3>Problem:</h3>You want data from multiple QuickBase tables to be viewable by an RSS reader.<br><h3>Solution:</h3><pre>The Ruby wrapper includes a script called QuickBaseRSSGenerator.rb. It includes an example of generating RSS from both the QuickBase Community Forum and the QuickBase KnowledgeBase. The example can be run by typing:
+
+ruby QuickBaseRSSGenerator.rb username password
+
+This puts a file called QuickBaseInfoRSS.xml in your current  folder.  This can be read by an RSS reader.
+
+Generating RSS from your own tables will just be a matter of modifying a copy of this code from QuickBaseRSSGenerator.rb:
+
+#-----------------------------------------------------------------------------------
+# The following test code generates RSS text from recently modified 
+#  records in the QuickBase Community Forum and KnowledgeBase.
+#-----------------------------------------------------------------------------------
+def test( username, password )
+   
+   qbc = QuickBase::Client.new( username, password )
+   qbRSSgen  = QuickBase::RSSGenerator.new( qbc )
+   
+   qbRSSgen.unSorted
+   
+   qbRSSgen.setTitle( &quot;QuickBase Forum/KnowledgeBase RSS&quot; )
+   qbRSSgen.setLink( &quot;main&quot; )
+   qbRSSgen.setDescription( &quot;RSS view of QuickBase Community Forum and KnowledgeBase&quot; )
+   
+   qbRSSgen.addTable(&quot;8emtadvk&quot;, &quot;Community Forum&quot;, { &quot;title&quot; =&gt; &quot;6&quot;, &quot;description&quot; =&gt; &quot;10&quot; }, nil, nil, nil, 75 )
+   qbRSSgen.addTable( &quot;6mztyxu8&quot;, &quot;KnowledgeBase&quot;, { &quot;title&quot; =&gt; &quot;5&quot;, &quot;description&quot; =&gt; &quot;6&quot; }, nil, nil, nil, 50 )
+   
+   rssText = qbRSSgen.generateRSStext
+   
+   File.open( &quot;QuickBaseInfoRSS.xml&quot;, &quot;w&quot; ) { |file| file.write( rssText ) }
+   print &quot;\nPlease view QuickBaseInfoRSS.xml in an RSS reader, a browser or an XML editor.\n&quot;
+   
+end
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>Ingredients:</h3>Ruby wrapper for QuickBase HTTP API, One-Click Ruby Installer for Windows, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=60">Make a CSV file from the data in a table</a><h3>Keywords</h3>CSV file download<br><h3>Problem:</h3>You need QuickBase data in a CSV file but don't want to use the 'manual' Export process in QuickBase.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+qbc = QuickBase::Client.new( &quot;my_username&quot;, &quot;my_password&quot;, &quot;My QuickBase Database&quot; )
+qbc.makeSVFile( &quot;MyCSVFile.csv&quot; )
+qbc.signOut
+
+</pre><br><h3>Discussion:</h3>If you find yourself manually exporting from the same table to the to the same CSV file over and over, this will save you a lot of time.
+<br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="makeCSVFile.rb">makeCSVFile.rb</a><br><h3>Ingredients:</h3>Ruby wrapper for QuickBase HTTP API, One-Click Ruby Installer for Windows, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=1">Download the QuickBase API Cookbook recipes to your local drive</a><h3>Keywords</h3>Download<br><h3>Problem:</h3>You want a local copy of the recipes in the QuickBase API Cookbook.<br><h3>Solution:</h3><pre>Please see the File Attachment - this script is 90 lines long and a bit too much to display here.  The script creates a directory called 'cookbookfiles' that contains QuickBaseAPICookbook.html and downloaded file attachments.</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="downloadCookbook.rb">downloadCookbook.rb</a><br><h3>Ingredients:</h3>Ruby wrapper for QuickBase HTTP API, One-Click Ruby Installer for Windows, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=101">Get the table IDs of the child tables of an application</a><h3>Keywords</h3>table id child application<br><h3>Problem:</h3>You need to loop through the tables of an application using a list of the table ids.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+puts &quot;\nThe QuickBase Support Center has these child tables:\n\n&quot;
+puts QuickBase::Client.new.getTableIDs(&quot;9kaw8phg&quot;).join(&quot;\n&quot;)
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="getTableIDs.rb">getTableIDs.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=100">Lookup a field property</a><h3>Keywords</h3>lookup field property<br><h3>Problem:</h3>Before processing records in some way, you need to know something about the definition of a particular field in QuickBase.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new
+
+qbc.getSchema(&quot;8emtadvk&quot;)
+showTimeInDateModified = qbc.lookupFieldPropertyByName(&quot;Date Modified&quot;,&quot;display_time&quot;) == &quot;1&quot; ? &quot;is&quot; : &quot;is not&quot;
+
+puts &quot;\nFor the Date Modified field in the QuickBase Community Forum, the time of day #{showTimeInDateModified} displayed.\n&quot;
+
+puts &quot;\nThe field properties you can lookup are: \n\n&quot;
+puts qbc.validFieldProperties.join(&quot;\n&quot;)
+
+=begin
+
+The above code prints -
+
+
+For the Date Modified field in the QuickBase Community Forum, the time of day is displayed.
+
+The field properties you can lookup are:
+
+allowHTML
+allow_new_choices
+appears_by_default
+append_only
+blank_is_zero
+bold
+carrychoices
+comma_start
+cover_text
+decimal_places
+default_kind
+default_today
+display_dow
+display_month
+display_relative
+display_time
+display_today
+display_user
+display_zone
+does_average
+does_total
+doesdatacopy
+exact
+find_enabled
+foreignkey
+label
+nowrap
+num_lines
+required
+sort_as_given
+unique
+use_new_window
+target_dbid
+target_dbname
+target_fieldname
+target_fid
+source_fieldname
+source_fid
+
+=end
+
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="lookupFieldPropertyByName.rb">lookupFieldPropertyByName.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=99">Copy images from web pages to QuickBase records</a><h3>Keywords</h3>copy image web <br><h3>Problem:</h3>You want a fast way to copy images from web pages to QuickBase records<br><h3>Solution:</h3><pre>Follow the steps to create a Windows Desktop icon for copying local files to QuickBase - https://www.quickbase.com/db/bcdcajmrg?a=dr&amp;r=db&amp;rl=ixf .
+
+In Firefox, drag an image directly from a web page onto your desktop, then drag it onto the icon for uploading files into QuickBase.  The image file will be uploaded into a QuickBase application with the same name as the folder for your Desktop. After it has been uploaded, delete the image file from your Desktop.
+
+
+
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=98">Create links to other records inside HTML text fields </a><h3>Keywords</h3>link wiki tag url<br><h3>Problem:</h3>You have a table with an HTML text field and you want to create links to other records in the HTML.<br><h3>Solution:</h3><pre>require 'QuickBaseclient'
+
+qbc = QuickBase::Client.new(ENV[&quot;quickbase_username&quot;],ENV[&quot;quickbase_password&quot;])
+
+dbid = &quot;bdeapkrmj&quot;
+baseURL = &quot;https://www.quickbase.com/db/#{dbid}?a=dr&amp;rid=&quot;
+links = {}
+
+# collect all the possible links in the table using the values in a particular text field
+qbc.iterateRecords(dbid,[&quot;Record ID#&quot;,&quot;tag&quot;]){|record|
+  if record[&quot;tag&quot;] and record[&quot;tag&quot;].length &gt; 0
+    links[record[&quot;tag&quot;]] = &quot;&lt;a href='#{baseURL}#{record[&quot;Record ID#&quot;]}&amp;rl=rfe'&gt;#{record['tag']}&lt;/a&gt;&quot;
+  end  
+}
+
+# loop through all the values in a particular HTML text field and insert links to other records 
+if links.length &gt; 0
+  qbc.iterateRecords(dbid,[&quot;Record ID#&quot;,&quot;text&quot;]){|record|
+    newText = record[&quot;text&quot;].dup
+    newText.gsub!(&quot;
+&quot;,&quot;&quot;)
+    links.each{|tag,url| 
+      newText.gsub!(url,tag) # remove existing link so we don't duplicate it
+      newText.gsub!(tag,url) 
+    }
+    qbc.clearFieldValuePairList
+    qbc.addFieldValuePair(&quot;text&quot;,nil,nil,newText)
+    qbc.editRecord(dbid,record[&quot;Record ID#&quot;],qbc.fvlist)
+  }
+end
+</pre><br><h3>Discussion:</h3>This example uses the all the values in the 'tag' field to create links to other records in all the 'text' fields.  The 'tag' field requires unique values but doesn't have to be the key field for the table.
+
+
+<br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="wikifyTable.rb">wikifyTable.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=97">Send a file to QuickBase by dragging it onto a Windows desktop icon</a><h3>Keywords</h3>drag drop windows desktop<br><h3>Problem:</h3>You want a fast way to send files from Windows into QuickBase records.<br><h3>Solution:</h3><pre>Follow all the steps listed in the 'Send To ' recipe - https://www.quickbase.com/db/bcdcajmrg?a=dr&amp;r=cu&amp;rl=iuh .
+
+After that, copy the 'QuickBase' shortcut from the Windows SendTo folder onto your Windows Desktop.  You can then drag and drop files onto the 'QuickBase' desktop icon.
+
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=95">Get table and record values using simple REST requests</a><h3>Keywords</h3>REST request<br><h3>Problem:</h3>You want to get information about tables and fields using simple REST syntax.
+<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new(ENV[&quot;quickbase_username&quot;],ENV[&quot;quickbase_password&quot;])
+
+puts &quot;\nTable id for QuickBase Community Forum:\n\n&quot;
+puts qbc.processRESTRequest(&quot;QuickBase Community Forum&quot;)
+
+puts &quot;\nName of Community Forum table:\n\n&quot;
+puts qbc.processRESTRequest(&quot;8emtadvk&quot;)
+
+puts &quot;\nCommunity Forum record for Ruby wrapper:\n\n&quot;
+puts qbc.processRESTRequest(&quot;8emtadvk/24105&quot;)
+
+puts &quot;\nFunction Names listed in QuickBase Support Center:\n\n&quot;
+puts qbc.processRESTRequest(&quot;6ewwzuuj/Function Name&quot;)
+
+puts &quot;\nRecipe 93 from the QuickBase API Cookbook:\n\n&quot;
+puts qbc.processRESTRequest(&quot;QuickBase API Cookbook v3/Recipes/93&quot;)
+
+puts &quot;\nGet the title of Recipe 93 from the QuickBase API Cookbook:\n\n&quot;
+puts qbc.processRESTRequest(&quot;QuickBase API Cookbook v3/Recipes/93/Title&quot;)
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="processRESTRequest.rb">processRESTRequest.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=96">Exchange messages automatically between QuickBase and Twitter</a><h3>Keywords</h3>twitter message automatic<br><h3>Problem:</h3>You want to connect QuickBase and Twitter so that messages are automatically sent between the two applications, you want to send automated replies from QuickBase to Twitter, and you want to perform simple QuickBase queries from Twitter.
+ <br><h3>Solution:</h3><pre>require 'QuickBaseTwitterConnector'
+
+QuickBase::TwitterConnector.new
+
+=begin
+
+This is a example of what you will see.
+The Twitter Connector will run in a loop, checking for new information every few minutes.
+Probably the most useful feature of this Connector is the ability to send two types of
+automated response, static text and the results from simple REST queries. 
+Remember that Twitter only accepts the first 140 characters of text.
+
+The Connector automatically creates a QuickBase application using your QuickBase
+username and your Twitter username.
+
+----------------------------------------------------------------------------------
+
+Please enter the Quickbase username to use for this session: fred_flintstone@internet.com
+Please enter the Quickbase password to use for this session: wilma
+Please enter the Twitter username to use for this session: fred_flintstone
+Please enter the Twitter password to use for this session: wilma
+
+
+Please enter a number to select the connection type:
+
+1 - Send Twitter messages to QuickBase.
+2 - Send QuickBase messages to Twitter.
+3 - Exchange messages between QuickBase and Twitter.
+4 - Send automated replies from QuickBase to Twitter.
+5 - All the above.
+
+5
+
+
+Getting 'friends' Twitter Status since Fri, 28 Mar 2008 13:47:24 -0700.
+Getting Direct Messages from Twitter since Fri, 28 Mar 2008 13:47:24 -0700.
+Sending messages from QuickBase to Twitter added since Fri, 28 Mar 2008 13:47:24 -0700.
+Getting Direct Messages from Twitter since Fri, 28 Mar 2008 13:47:24 -0700.
+Automated Direct Message sent to wilma_flintstone: what's for dinner?: rex ribs
+
+=end
+</pre><br><h3>Discussion:</h3>The best way to understand how the TwitterConnector works is by reading the source code of the QuickBaseTwitterConnector.rb file which is part of the Ruby wrapper.
+<br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="runQuickBaseTwitterConnector.rb">runQuickBaseTwitterConnector.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=93">Get a list of records with human-readable field values</a><h3>Keywords</h3>printable readable<br><h3>Problem:</h3>The API returns certain field types, such as dates and users, as raw data rather than formatted the same way as they appear in QuickBase.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+puts &quot;\n\nQuickBase Formula Functions Reference:\n\n&quot;
+
+QuickBase::Client.new.iterateRecordInfos(&quot;6ewwzuuj&quot;){|ri|  
+  puts &quot;------------------------------&quot;
+  ri.each{|field,value| puts &quot;#{field}: #{value}\n&quot;}
+}
+</pre><br><h3>Discussion:</h3>NOTE: iterateRecordInfos() can be much slower that iterateRecords() because every record triggers a separate API request to QuickBase.
+<br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="iterateRecordInfos.rb">iterateRecordInfos.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=94">Get a list of field IDs for a table</a><h3>Keywords</h3>field id table list<br><h3>Problem:</h3>You need a list of the Field IDs for all the fields in a QuickBase table.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+puts &quot;\n\nThe field IDs for the QuickBase Community Forum are : #{QuickBase::Client.new.getFieldIDs(&quot;8emtadvk&quot;).join(&quot;,&quot;)}\n\n&quot;
+ </pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="getFieldIDs.rb">getFieldIDs.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=92">Get the time in milliseconds, for comparison with QuickBase record timestamps</a><h3>Keywords</h3>timestamp milliseconds<br><h3>Problem:</h3>QuickBase stores 'Date Created' and 'Date Modified' as milliseconds and returns them to API clients in milliseconds.  To compare those fields to the current time or another time, you need to format the time in milliseconds.
+<br><h3>Solution:</h3><pre>require 'QuickBaseMisc'
+
+puts &quot;\n\nThe time now in milliseconds is #{QuickBase::Misc.time_in_milliseconds}.&quot;
+puts &quot;\nThe time in milliseconds at the beginning of today was #{QuickBase::Misc.time_in_milliseconds(Date.today)}.&quot;
+puts &quot;\nThe time in milliseconds at this time tomorrow will be #{QuickBase::Misc.time_in_milliseconds(DateTime.now + 1)}.&quot;
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="getTimeInMilliseconds.rb">getTimeInMilliseconds.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=91">Get the name of a QuickBase table from its id</a><h3>Keywords</h3>id table name<br><h3>Problem:</h3>You know the dbid of a QuickBase table and want to use that to get the name of the table.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new
+
+puts &quot;The name of the table for dbid 'bbqm84dzy' is '#{qbc.getTableName('bbqm84dzy')}'.&quot;
+
+# The above code prints  - 
+# The name of the table for dbid 'bbqm84dzy' is 'QuickBase Community Forum'.
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="getTableName.rb">getTableName.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=90">Get the number of tables in a QuickBase application</a><h3>Keywords</h3>number tables<br><h3>Problem:</h3>You want to know the number of tables in a particular QuickBase application.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new
+puts &quot;There are #{qbc.getNumTables(&quot;bbtt9cjr6&quot;)} tables in the QuickBase Application Library.&quot;
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="getNumTables.rb">getNumTables.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=89">Test whether a string is in the format of a QuickBase database ID (dbid)</a><h3>Keywords</h3>dbid id string<br><h3>Problem:</h3>Before attempting to access a QuickBase table using the API, you want to test whether the string representing a table id (dbid) is in the right format.  The string should be a Base 32 number using the base 32 scheme used by QuickBase.<br><h3>Solution:</h3><pre>
+require 'QuickBaseMisc'
+
+print &quot;\n\nEnter a string: &quot;
+string = gets.chop
+
+puts &quot;\n\n'#{string}' is #{QuickBase::Misc.isDbidString?(string) ? '' : 'not'} a valid QuickBase table id string.\n\n&quot;
+
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="isDbidString.rb">isDbidString.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=88">Get messages from QuickBase to send to Twitter</a><h3>Keywords</h3>twitter message<br><h3>Problem:</h3>You want to enter messages in QuickBase and send them from there to Twitter.<br><h3>Solution:</h3><pre>require 'rubygems'
+gem 'twitter4r', '&gt;=0.3.0'
+require 'twitter'
+
+require 'QuickBaseClient'
+
+print &quot;Please enter your QuickBase username: &quot;
+quickbase_username = gets.chop
+print &quot;Please enter your QuickBase password: &quot;
+quickbase_password = gets.chop
+qbc = QuickBase::Client.new(quickbase_username,quickbase_password)
+
+dbid = qbc.findDBByName(&quot;Twitter messages (#{quickbase_username})&quot; )
+if dbid.nil?
+    dbid = qbc.createDatabase(&quot;Twitter messages (#{quickbase_username})&quot;, &quot;This is a list of messages from Twitter.&quot;)
+    qbc.addField(dbid,&quot;Twitter_Screen_Name&quot;, &quot;text&quot;)
+    qbc.addField(dbid,&quot;Twitter_Message&quot;, &quot;text&quot;)
+else   
+  
+  messagesToMoveToTwitter = []
+  qbc.iterateRecords(dbid,[&quot;Record ID#&quot;,&quot;Twitter_Screen_Name&quot;,&quot;Twitter_Message&quot;]){|record|
+    p record
+    if record[&quot;Twitter_Screen_Name&quot;].nil? or record[&quot;Twitter_Screen_Name&quot;] == &quot;&quot; and record[&quot;Twitter_Message&quot;] and record[&quot;Twitter_Message&quot;] != &quot;&quot;       
+      messagesToMoveToTwitter &lt;&lt; record[&quot;Twitter_Message&quot;]
+      qbc.deleteRecord(dbid,record[&quot;Record ID#&quot;])
+    end  
+  }
+  
+  if messagesToMoveToTwitter.length &gt; 0
+    print &quot;Please enter your Twitter username: &quot;
+    twitter_username = gets.chop
+    print &quot;Please enter your Twitter password: &quot;
+    twitter_password = gets.chop
+    twitter_client = Twitter::Client.new(:login =&gt; twitter_username, :password =&gt; twitter_password )
+    
+    messagesToMoveToTwitter.each {|message|
+      Twitter::Status.create(:text =&gt; message,:client =&gt; twitter_client)
+    }
+    
+  end
+  
+end
+</pre><br><h3>Discussion:</h3>This solution depends on the twitter4r Ruby API for Twitter.
+It looks for messages in QuickBase that have no 'sender', sends them to Twitter, then removes them from QuickBase.
+The messages will just be updates to your Twitter status.
+ <br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="twitterFromQuickBase.rb">twitterFromQuickBase.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, twitter4r<br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=87">Get Twitter messages into QuickBase</a><h3>Keywords</h3>Twitter<br><h3>Problem:</h3>You want to send messages from Twitter to QuickBase.<br><h3>Solution:</h3><pre>require 'rubygems'
+gem 'twitter4r', '&gt;=0.3.0'
+require 'twitter'
+
+# ----------------------------------------------------------------------
+require 'QuickBaseClient'
+
+print &quot;Please enter your QuickBase username: &quot;
+quickbase_username = gets.chop
+
+print &quot;Please enter your QuickBase password: &quot;
+quickbase_password = gets.chop
+
+qbc = QuickBase::Client.new(quickbase_username,quickbase_password)
+dbid = qbc.findDBByName(&quot;Twitter messages (#{quickbase_username})&quot; )
+if dbid.nil?
+    dbid = qbc.createDatabase(&quot;Twitter messages (#{quickbase_username})&quot;, &quot;This is a list of messages from Twitter.&quot;)
+    qbc.addField(dbid,&quot;Twitter_Screen_Name&quot;, &quot;text&quot;)
+    qbc.addField(dbid,&quot;Twitter_Message&quot;, &quot;text&quot;)
+end
+
+# ----------------------------------------------------------------------
+print &quot;Please enter your Twitter username: &quot;
+twitter_username = gets.chop
+
+print &quot;Please enter your Twitter password: &quot;
+twitter_password = gets.chop
+
+twitter_client = Twitter::Client.new(:login =&gt; twitter_username, :password =&gt; twitter_password )
+timeline = twitter_client.timeline_for(:public) do |status|
+  qbc.clearFieldValuePairList
+  qbc.addFieldValuePair(&quot;Twitter_Screen_Name&quot;,nil,nil,status.user.screen_name)
+  qbc.addFieldValuePair(&quot;Twitter_Message&quot;,nil,nil,status.text)
+  qbc.addRecord(dbid,qbc.fvlist)
+end
+</pre><br><h3>Discussion:</h3>This script requires the twitter4r Ruby API for Twitter.
+It sends the last 20 public Twitter messages to QuickBase.
+<br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="twitterWithQuickBase.rb">twitterWithQuickBase.rb</a><br><h3>Ingredients:</h3>Ruby wrapper for QuickBase HTTP API, One-Click Ruby Installer for Windows, twitter4r<br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=86">Make a slideshow in QuickBase from a folder of picture files</a><h3>Keywords</h3>slide show slideshow picture folder<br><h3>Problem:</h3>You want to use QuickBase to display a sequence of web pages containing 'slides' containing the picture files from a folder on your local computer.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+require 'QuickBaseMisc'
+
+username = ARGV[0] || ENV[&quot;quickbase_username&quot;] 
+password = ARGV[1] || ENV[&quot;quickbase_password&quot;] 
+
+qbc = QuickBase::Client.new(username,password)
+
+cwd = Dir.pwd.gsub('/','\\')
+
+dbid = qbc.findDBByName(cwd)
+if dbid.nil?
+  dbid = qbc.createDatabase(cwd,&quot;#{username}'s slide show from #{cwd}.&quot;)
+  qbc.addField(dbid,&quot;Picture&quot;,&quot;file&quot;)
+  qbc.addField(dbid,&quot;HtmlPage&quot;,&quot;file&quot;)
+else  
+  qbc.getSchema(dbid)
+  dbid = qbc.lookupChdbid(cwd.dup)
+  qbc.getSchema(dbid)
+end  
+pictureFieldID = QuickBase::Misc.decimalToBase32(6)
+htmlPageFieldID = QuickBase::Misc.decimalToBase32(7)
+Dir.foreach(cwd){|file|
+  next unless [&quot;.jpeg&quot;, &quot;.jpg&quot;,&quot;.gif&quot;,&quot;.bmp&quot;,&quot;.png&quot;].include?(file.downcase[file.rindex('.'),file.length])
+  renamedFile = file.dup
+  renamedFile.gsub!(&quot;&amp;&quot;,&quot;And&quot;)
+  renamedFile.gsub!(&quot;'&quot;,&quot; &quot;)
+  if renamedFile != file
+     File.rename(file,renamedFile)
+  end
+  puts &quot;Uploading #{renamedFile}&quot;
+  rid, updateid = qbc.uploadFile(dbid, renamedFile.dup, &quot;Picture&quot;)
+  thisRid = QuickBase::Misc.decimalToBase32(rid.to_i)
+  prevRid = QuickBase::Misc.decimalToBase32(rid.to_i-1)
+  nextRid = QuickBase::Misc.decimalToBase32(rid.to_i+1)
+  pictureURL = &quot;https://www.quickbase.com/up/#{dbid}/g/r#{thisRid}/e#{pictureFieldID}/va/#{renamedFile.dup}&quot;
+  prevHtmlURL = &quot;https://www.quickbase.com/up/#{dbid}/g/r#{prevRid}/e#{htmlPageFieldID}/va/slide.html&quot;
+  nextHtmlURL = &quot;https://www.quickbase.com/up/#{dbid}/g/r#{nextRid}/e#{htmlPageFieldID}/va/slide.html&quot;
+  html = &quot;&lt;center&gt;&lt;img src=\&quot;#{pictureURL}\&quot; /&gt;&lt;br&gt;#{renamedFile.dup}&lt;b&gt;#{}&lt;/b&gt;&lt;hr&gt;&lt;a href=\&quot;#{prevHtmlURL}\&quot;&gt;Previous&lt;/a&gt; &lt;a href=\&quot;#{nextHtmlURL}\&quot;&gt;Next&lt;/a&gt;&lt;/center&gt;&quot;
+  File.open(&quot;slide.html&quot;,&quot;w&quot;){|f|f.write(html)}
+  qbc.updateFile(dbid,rid,&quot;slide.html&quot;,&quot;HtmlPage&quot;)
+}
+</pre><br><h3>Discussion:</h3>Note: This script must be run from the folder containing the picture files, and you must supply your QuickBase username and password on the command line or in environment variables &quot;quickbase_username&quot; and &quot;quickbase_password&quot;.
+
+The script will create or update a QuickBase application with the same name as the folder your are in on your local computer.  To begin the slideshow, click on the &quot;slide.html&quot; file in the first QuickBase record in the database.
+
+<br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="makeSlideShow.rb">makeSlideShow.rb</a><br><h3>Ingredients:</h3>Ruby wrapper for QuickBase HTTP API, One-Click Ruby Installer for Windows, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=85">Use company.quickbase.com instead of www.quickbase.com in all API calls</a><h3>Keywords</h3>company org<br><h3>Problem:</h3>You are using the Enterprise version of QuickBase and all your applications are in (e.g.) mycompany.quickbase.com instead of www.quickbase.com.  Your API calls must also connect to mycompany.quickbase.com instead of www.quickbase.com.<br><h3>Solution:</h3><pre>
+require 'QuickBaseClient'
+
+#There are two ways to set the URL for your company
+
+# 1)
+qbc1 = QuickBase::Client.new( &quot;fred_flinstone@internet.com&quot;, &quot;wilma&quot;, nil, true, false, false, false, &quot;mycompany&quot; )
+
+# 2)
+qbc2 = QuickBase::Client.new( &quot;fred_flinstone@internet.com&quot;, &quot;wilma&quot;)
+qbc2.setqbhost( true, &quot;mycompany&quot; )
+
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="useCompanyURL.rb">useCompanyURL.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=84">Display a 'running total' column in a regular Table report</a><h3>Keywords</h3>running total table report<br><h3>Problem:</h3>QuickBase Summary reports can display running totals, but regular 'Table' reports only show totals when you group the reports by numeric fields.  <br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new(ENV[&quot;quickbase_username&quot;],ENV[&quot;quickbase_password&quot;])
+
+runningTotal = 0
+qbc.iterateRecords(&quot;bdcvpsxpy&quot;,qbc.getFieldNames(&quot;bdcvpsxpy&quot;),nil,nil,&quot;List All by Date Created&quot;){|record|
+  runningTotal += record['number'].to_i
+  qbc.clearFieldValuePairList
+  qbc.addFieldValuePair(&quot;running total&quot;,nil,nil,runningTotal.to_s)
+  qbc.editRecord(&quot;bdcvpsxpy&quot;,record['Record ID#'],qbc.fvlist)
+}
+</pre><br><h3>Discussion:</h3>This solution does not require grouping. Note that the value in the 'running total' field depends on the sort order of the Report you use.  If users view a Report with a different sort order, the 'running total' values will not be correct until you run this script using that Report.
+
+<br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="calculateRunningTotals.rb">calculateRunningTotals.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=83">Use Ruby code in a 'formula' field</a><h3>Keywords</h3>ruby formula<br><h3>Problem:</h3>You want to use Ruby code to calculate field values rather than a regular QuickBase formula field.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new(ENV[&quot;quickbase_username&quot;],ENV[&quot;quickbase_password&quot;])
+qbc.iterateRecords(&quot;bdcvpsxpy&quot;,qbc.getFieldNames(&quot;bdcvpsxpy&quot;)){|record|
+  nameAndNumber = eval(record['ruby formula 1']) || &quot;&lt;name and number&gt;&quot;
+  qbc.clearFieldValuePairList
+  qbc.addFieldValuePair(&quot;name+number&quot;,nil,nil,nameAndNumber)
+  qbc.editRecord(&quot;bdcvpsxpy&quot;, record['Record ID#'],qbc.fvlist)
+}
+
+</pre><br><h3>Discussion:</h3>This example works by treating the value of a text field as Ruby code, and setting the value of another field in each record by evaluating the Ruby code.  The Ruby code can access other fields in the same record, or from other records, or it can use data that is not in QuickBase at all.
+Use default values and field-level permissions to turn regular text fields into a 'ruby formula' fields.
+Also note how this example gets the QuickBase username and password from environment variables.
+An interesting thing to explore with this idea is the possibility of having a different formula for every record.
+<br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="applyRubyFormulas.rb">applyRubyFormulas.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=82">Send a file to QuickBase from the Windows 'Send To' menu</a><h3>Keywords</h3>send Windows explorer right-click<br><h3>Problem:</h3>You want to upload files from Windows folders by right-clicking them and selecting 'Send To, QuickBase' .<br><h3>Solution:</h3><pre>1. Create a sendToQuickBase.bat file with the following text:
+
+ruby sendToQuickBase.rb %1
+pause
+
+2. Put the attached sendToQuickBase.rb file next to your sendToQuickBase.bat file
+3. Right-click your Windows Start button and select Explore
+4. Find the 'SendTo' folder
+5. In the SendTo folder, create a shortcut that points to you sendToQuickBase.bat file
+5. Give the name 'QuickBase' to the shortcut.
+6. Test out your shortcut by right-clicking any Windows file and selecting 'QuickBase' from the 'Send To' menu. The file you selected will appear in a QuickBase application with the same name as the folder that contains the file. For example, if you select the file c:\temp\test.txt, the file will go into a QuickBase application called c:\temp.
+
+
+
+=======================================
+require 'QuickBaseClient'
+
+if ARGV[0] and File.exist?(ARGV[0]) and ARGV[0].rindex(&quot;\\&quot;)
+  username = ARGV[1] || ENV[&quot;quickbase_username&quot;]
+  password = ARGV[2] || ENV[&quot;quickbase_password&quot;]
+  if username.nil?
+    print &quot;Please enter your QuickBase user name: &quot;
+    username = gets.chop
+  end
+  if password.nil?
+    print &quot;Please enter your QuickBase password: &quot;
+    password = gets.chop
+  end    
+  qbc = QuickBase::Client.new(username, password)
+  folder = ARGV[0][0,ARGV[0].rindex(&quot;\\&quot;)]
+  file = ARGV[0][ARGV[0].rindex(&quot;\\&quot;)+1,ARGV[0].length]
+  dbid = qbc.findDBByName(folder)
+  if dbid.nil?
+    dbid = qbc.createDatabase(folder,&quot;Files uploaded from #{folder}&quot;)
+    qbc.addField(dbid, &quot;Description&quot;,&quot;text&quot;)
+    qbc.addField(dbid, &quot;File Attachment&quot;,&quot;file&quot;)
+  else
+    qbc.getSchema(dbid)
+    dbid = qbc.lookupChdbid(folder.dup)
+  end
+  Dir.chdir(folder)
+  qbc.uploadFile(dbid,file.dup,&quot;File Attachment&quot;)
+else
+  puts &quot;\n\nusage: ruby sendToQuickBase.rb &lt;filepath&gt; [username] [password]&quot;
+  puts &quot;\ne.g. ruby sendToQuickBase.rb c:\temp\mySpecialFile&quot;
+  puts &quot;\nYou can omit your username and password if they are in environment&quot;
+  puts &quot;variables 'quickbase_username' and 'quickbase_password'.\n\n&quot;
+end
+</pre><br><h3>Discussion:</h3>To distrubute this to users easily, use the rubyscript2exe utility to make a sendToQuickBase.exe file, and have the users create a SendTo shortcut to sendToQuickBase.exe using the steps above.<br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="sendToQuickBase.rb">sendToQuickBase.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, rubyscript2exe<br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=81">QuickBase Instant Messenger</a><h3>Keywords</h3>instant messenger<br><h3>Problem:</h3>You want an instant messenger that saves its messages into QuickBase.<br><h3>Solution:</h3><pre>See the 'qbm - QuickBase Messenger' application at https://www.quickbase.com/db/bb4xcmxni .
+This is an example of how to create a cross-platform interactive desktop application that saves its data into QuickBase.
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=80">Display a report and its form on one web page</a><h3>Keywords</h3>report form page<br><h3>Problem:</h3>When you click on a View link in a QuickBase report, the report goes off the screen and is replaced by the form for viewing the record.  It would be nice to be able to keep the record links on the screen while the form is displayed.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+require 'QuickBaseMisc'
+
+qbc = QuickBase::Client.new
+
+i = 0
+recordViewLinks = &quot;&quot;
+qbc.iterateRecords(&quot;8emtadvk&quot;,[&quot;Message ID#&quot;,&quot;Subject&quot;]){|msg|
+  if i &lt; 15
+    r = QuickBase::Misc.decimalToBase32(msg['Message ID#'])
+    recordViewLinks &lt;&lt; &quot;&lt;a href=\&quot;https://www.quickbase.com/db/8emtadvk?a=dr&amp;r=#{r}\&quot; target=\&quot;RecordContainer\&quot;&gt;#{msg['Subject']}&lt;/a&gt;&lt;br&gt;&quot;
+  end
+  i += 1
+}
+
+html = &lt;&lt;EndHTML
+
+&lt;html&gt;
+&lt;head&gt;
+&lt;style type=&quot;text/css&quot;&gt;
+td { white-space: nowrap; vertical-align: top }
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;table border=&quot;1&quot; &gt;
+&lt;tr&gt;&lt;td&gt;&lt;b&gt;Community Forum Records&lt;/b&gt;&lt;td&gt;&lt;td&gt;&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;
+#{recordViewLinks}
+&lt;/td&gt;
+&lt;td&gt;
+&lt;iframe name=&quot;RecordContainer&quot; Width=&quot;800&quot; Height=&quot;650&quot; /&gt;
+&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/table&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+
+EndHTML
+
+File.open(&quot;QuickBaseCommunityForumRecordViewer.html&quot;,&quot;w&quot;){|f|f.write(html)}
+</pre><br><h3>Discussion:</h3>This code creates a QuickBaseCommunityForumRecordViewer.html file with links to view the latest 15 Community Forum records.
+There is a sample output file here - https://www.quickbase.com/up/bcdcajmrj/g/rc/ei/va/QuickBaseCommunityForumRecordViewer.html
+<br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="createRecordNavigatorHTML.rb">createRecordNavigatorHTML.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=79">Get the record display URL for a record</a><h3>Keywords</h3>display url record<br><h3>Problem:</h3>The URL for Viewing a record in QuickBase uses a base-32 number for the Record ID#, instead of the regular decimal number.<br><h3>Solution:</h3><pre>require 'QuickBaseMisc'
+
+r = QuickBase::Misc.decimalToBase32(24105)
+puts &quot;&lt;a href=\&quot;https://www.quickbase.com/db/8emtadvk?a=dr&amp;r=#{r}\&quot;&gt;Ruby API home page&lt;/a&gt;&quot;
+
+=begin
+
+The above code prints this HTML link -
+
+&lt;a href=&quot;https://www.quickbase.com/db/8emtadvk?a=dr&amp;r=ztj&quot;&gt;Ruby API home page&lt;/a&gt;
+
+=end
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="getRecordDisplayURL.rb">getRecordDisplayURL.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=78">Make a web page with report links fixed on the left side</a><h3>Keywords</h3>report links fixed html page<br><h3>Problem:</h3>QuickBase Dashboards let you click on Report links on the left hand side of the screen, but clicking a report displays the report and the Reports links go off the screen.  The example code builds an HTML page with report links on the left that stay on the screen when you click them.  This can be a significant navigation improvement for some applications.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new
+
+reportsHTML = &quot;&quot;
+reportNames = qbc.getReportNames(&quot;8emtadvk&quot;)
+reportNames.each{|reportName|
+  report = qbc.lookupQueryByName(reportName) 
+  reportID = report.attributes[&quot;id&quot;]
+  reportsHTML &lt;&lt; &quot;&lt;a href=\&quot;https://www.quickbase.com/db/8emtadvk?a=q&amp;qid=#{reportID}\&quot; target=\&quot;ReportContainer\&quot; &gt;#{reportName}&lt;/a&gt;&lt;BR&gt;&quot;
+}
+
+html =   &quot;&lt;html&gt;&quot;
+html &lt;&lt; &quot;&lt;head&gt;&quot;
+html &lt;&lt; &quot;&lt;style type=\&quot;text/css\&quot;&gt;&quot;
+html &lt;&lt; &quot;td { white-space: nowrap; vertical-align: top }&quot;
+html &lt;&lt; &quot;&lt;/style&gt;&quot;
+html &lt;&lt; &quot;&lt;/head&gt;&quot;
+html &lt;&lt; &quot;&lt;body&gt;&quot;
+html &lt;&lt; &quot;&lt;table border=\&quot;1\&quot; &gt;&quot;
+html &lt;&lt; &quot;&lt;tr&gt;&lt;td&gt;&lt;b&gt;Community Forum Reports&lt;/b&gt;&lt;td&gt;&lt;td&gt;&lt;/tr&gt;&quot;
+html &lt;&lt; &quot;&lt;tr&gt;&quot;
+html &lt;&lt; &quot;&lt;td&gt;&lt;b&gt;&quot;
+html &lt;&lt; reportsHTML
+html &lt;&lt; &quot;&lt;/b&gt;&lt;/td&gt;&quot;
+html &lt;&lt; &quot;&lt;td&gt;&quot;
+html &lt;&lt; &quot;&lt;iframe name=\&quot;ReportContainer\&quot; Width=\&quot;700\&quot; Height=\&quot;800\&quot; /&gt;&quot;
+html &lt;&lt; &quot;&lt;/td&gt;&quot;
+html &lt;&lt; &quot;&lt;/tr&gt;&quot;
+html &lt;&lt; &quot;&lt;/table&gt;&quot;
+html &lt;&lt; &quot;&lt;/body&gt;&quot;
+html &lt;&lt; &quot;&lt;/html&gt;&quot;
+
+File.open(&quot;QuickBaseCommunityForumReports.html&quot;,&quot;w&quot;){|f|f.write(html)}
+</pre><br><h3>Discussion:</h3>This example makes a web page for the QuickBase Community forum.  You can open the QuickBaseCommunityForumReports.html file to see the results.  The file you generate can be uploaded manually or automatically into QuickBase to create your own kind of Dashboard.
+
+<br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="createReportDashboard.rb">createReportDashboard.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=77">Get a list of the sort fields used in a report</a><h3>Keywords</h3>sort field report<br><h3>Problem:</h3>You need a list of the sort fields used in a QuickBase report.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new
+qbc.getSchema(&quot;8emtadvk&quot;)
+puts &quot;Sort fields for QuickBase Community Forum 'List Changes' report: #{qbc.getSortListForQuery(nil,'List Changes')}&quot;
+puts &quot;Sort fields for QuickBase Community Forum 'List Changes' report: #{qbc.getSortListForQuery('2',nil)}&quot;
+</pre><br><h3>Discussion:</h3>This is useful when you want to use the doQuery() API call and sort the results using the same sort field as an existing QuickBase report.
+
+<br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="getSortListForReport.rb">getSortListForReport.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=76">Get a list of the columns used in a report</a><h3>Keywords</h3>column list report<br><h3>Problem:</h3>You need a list of the columns used in a QuickBase report.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new
+qbc.getSchema(&quot;8emtadvk&quot;)
+puts &quot;Columns for QuickBase Community Forum 'List all' report: #{qbc.getColumnListForQuery(nil,'List All')}&quot;
+puts &quot;Columns for QuickBase Community Forum 'List all' report: #{qbc.getColumnListForQuery(&quot;1&quot;,nil)}&quot;
+</pre><br><h3>Discussion:</h3>This is useful when you want to retrieve all the columns for a report when using the doQuery() API call.
+<br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="getColumnListForReport.rb">getColumnListForReport.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=75">Determine whether a field has an Average in reports</a><h3>Keywords</h3>field total<br><h3>Problem:</h3>You need to know whether a field in QuickBase has an Average at the bottom of reports in QuickBase.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new
+
+qbc.getSchema(&quot;93htvp8y&quot;)
+
+if qbc.isAverageField?(&quot;Subject&quot;)
+    puts &quot;The 'Subject' field in the QuickBase Community Forum has an Average at the bottom of reports.&quot;
+else
+    puts &quot;The 'Subject' field in the QuickBase Community Forum does not have a Average at the bottom of reports.&quot;
+end
+
+if qbc.isAverageField?(&quot;# of Posts&quot;)
+    puts &quot;The '# of Posts' field in the QuickBase Community Forum has a Average at the bottom of reports.&quot;
+else
+    puts &quot;The '# of Posts' field in the QuickBase Community Forum does not have a Average at the bottom of reports.&quot;
+end
+</pre><br><h3>Discussion:</h3>This is useful if you want to duplicate a QuickBase report in an HTML page or some other format outside QuickBase.
+<br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="isAverageField.rb">isAverageField.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=74">Determine whether a field has a Total in reports</a><h3>Keywords</h3>field total<br><h3>Problem:</h3>You need to know whether a field in QuickBase has a Total at the bottom of reports in QuickBase.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new
+
+qbc.getSchema(&quot;8emtadvk&quot;)
+if qbc.isTotalField?(&quot;Subject&quot;)
+    puts &quot;The 'Subject' field in the QuickBase Community Forum has a Total at the bottom of reports.&quot;
+else
+    puts &quot;The 'Subject' field in the QuickBase Community Forum does not have a Total at the bottom of reports.&quot;
+end
+
+if qbc.isTotalField?(&quot;# of Posts&quot;)
+    puts &quot;The '# of Posts' field in the QuickBase Community Forum has a Total at the bottom of reports.&quot;
+else
+    puts &quot;The '# of Posts' field in the QuickBase Community Forum does not have a Total at the bottom of reports.&quot;
+end
+</pre><br><h3>Discussion:</h3>This is useful if you want to duplicate a QuickBase report in an HTML page or some other format outside QuickBase.
+<br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="isTotalField.rb">isTotalField.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=73">Improve the speed of multiple API requests</a><h3>Keywords</h3>speed performance<br><h3>Problem:</h3>If your script makes a lot of API calls for different tables, the performance (i.e. speed) may not be enough.
+<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new
+
+# get the schema for the QuickBase Community Forum
+firstTime=true
+2.times {
+
+  totalTime = Time.now
+  
+  8.times {
+    getSchemaTime = Time.now
+    qbc.getSchema(&quot;bbqm84dzy&quot;)
+    puts &quot;getSchema took #{Time.now-getSchemaTime} seconds&quot;
+  }
+  
+  puts &quot;\nTotal time: #{Time.now-totalTime} seconds&quot;
+  
+  qbc.signOut
+  qbc = QuickBase::Client.new
+  qbc.cacheSchemas = true
+  puts &quot;Caching schema...&quot; if firstTime
+  firstTime = false
+}
+
+=begin
+
+Sample output of the above script:-
+
+getSchema took 1.438 seconds
+getSchema took 0.515 seconds
+getSchema took 0.5 seconds
+getSchema took 0.485 seconds
+getSchema took 0.515 seconds
+getSchema took 0.532 seconds
+getSchema took 0.484 seconds
+getSchema took 0.5 seconds
+
+Total time: 4.969 seconds
+Caching schema...
+getSchema took 0.515 seconds
+getSchema took 0.016 seconds
+getSchema took 0.015 seconds
+getSchema took 0.0 seconds
+getSchema took 0.016 seconds
+getSchema took 0.0 seconds
+getSchema took 0.016 seconds
+getSchema took 0.031 seconds
+
+Total time: 0.609 seconds
+
+=end
+
+</pre><br><h3>Discussion:</h3>'cacheSchemas' is one of the things you can do to improve performance.  Reducing the number of API requests will always improve performance.
+
+<br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="cacheSchemas.rb">cacheSchemas.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=72">Get the list of reports for a table</a><h3>Keywords</h3>list reports queries<br><h3>Problem:</h3>You need a list of the reports for a table.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new
+
+# list the reports from the Formula Functions Reference table in the QuickBase Support Center
+puts qbc.getReportNames(&quot;6ewwzuuj&quot;)
+
+=begin
+
+The above code prints the list below:-
+
+All Functions
+All Functions and Operators
+Boolean Functions
+Formula Export View
+gsa_formula functions ref
+List All
+List Changes
+Number Functions
+Operators - Binary
+Operators - Unary
+Text Functions
+Time and Date Functions
+
+=end
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="getReportNames.rb">getReportNames.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=71">Get the status of the QuickBase server</a><h3>Keywords</h3>server status<br><h3>Problem:</h3>You are curious about the status of the QuickBase server.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new
+serverStatus = qbc.getServerStatus
+
+puts &quot;\nversion: #{serverStatus['version']}&quot;
+puts &quot;users:     #{serverStatus['users']}&quot;
+puts &quot;groups:    #{serverStatus['groups']}&quot;
+puts &quot;databases: #{serverStatus['databases']}&quot;
+puts &quot;uptime:    #{serverStatus['uptime']}&quot;
+puts &quot;updays:    #{serverStatus['updays']}&quot;
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="getServerStatus.rb">getServerStatus.rb</a><br><h3>Ingredients:</h3>, , <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=70">List the pages in an application</a><h3>Keywords</h3>list pages page application<br><h3>Problem:</h3>You need a list of the pages in an application.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new
+
+# List the Pages from the QuickBase Support Center
+qbc.iterateDBPages(&quot;9kaw8phg&quot;){|page|
+  puts &quot;Page: #{page['name']}, Type: #{page['type']}, ID: #{page['id']}\n&quot; 
+}
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="iterateDBPages.rb">iterateDBPages.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=68">Edit a record, or add one if necessary</a><h3>Keywords</h3>add edit record<br><h3>Problem:</h3>You don't know whether a record exists with a specific Record ID#, and you want to edit the record if it does exist, or add a new record.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;)
+
+# Attempt to change Name to Fred in record 7
+# If there is no record 7, add a new record and set the Name to Fred.
+qbc.addFieldValuePair(&quot;Name&quot;,nil,nil,&quot;Fred&quot;)
+qbc.addOrEditRecord(&quot;dbiddbid&quot;,qbc.fvlist,&quot;7&quot;)
+
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="addOrEditRecord.rb">addOrEditRecord.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=69">Retrieve one record from a table</a><h3>Keywords</h3>get one record<br><h3>Problem:</h3>You just want to read a single existing record from a table, without having to know all the field names in the table.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+qbc = QuickBase::Client.new
+qbc.getRecord(&quot;24105&quot;,&quot;8emtadvk&quot;){|myRecord| 
+  myRecord.each{|key,value| puts &quot;Field: #{key}, Value: #{value}\n&quot; }
+}
+</pre><br><h3>Discussion:</h3>The record will be returned as a Ruby Hash.
+<br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="getRecord.rb">getRecord.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=67">Get a list of the tables in an application</a><h3>Keywords</h3>list table name<br><h3>Problem:</h3>You need to get the list of tables in a QuickBase application.<br><h3>Solution:</h3><pre>
+require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new
+tableNames = qbc.getTableNames(&quot;bbtt9cjr6&quot;)
+puts &quot;\nTables in the QuickBase Application Library:\n\n&quot;
+puts tableNames.join( &quot;\n&quot;)
+
+=begin
+Output of the above script:
+
+Tables in the QuickBase Application Library:
+
+Applications
+Versions
+Files
+Reviews
+Activity Log
+Bookmarks
+Feedback
+Featured Apps
+Categories
+
+=end
+
+</pre><br><h3>Discussion:</h3>This would be especially useful if the list of tables in a particular application is likely to change.
+<br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="getTableNames.rb">getTableNames.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=66">Format a duration value retrieved from QuickBase</a><h3>Keywords</h3>duration format<br><h3>Problem:</h3>The QuickBaseAPI returns duration field values in milliseconds, but you need to display the value as Days, Hours, or Minutes.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+# change &quot;username&quot; &quot;password&quot; to your QuickBase username and password
+qbc =  QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;)
+
+# read and format the &quot;duration&quot; field from all the records in a table
+qbc.iterateRecords(&quot;dbiddbid&quot;,[&quot;duration&quot;]){|rec|
+  rawValue = rec['duration']
+  days = qbc.formatDuration(rawValue.dup,&quot;days&quot;)
+  hours  = qbc.formatDuration(rawValue.dup,&quot;hours&quot;)
+  minutes  = qbc.formatDuration(rawValue.dup,&quot;minutes&quot;)
+  printf(&quot;Raw value: %-15s Days: %-10s Hours: %-10s Minutes: %-10s\n&quot;, rec['duration'], days, hours, minutes)
+}
+
+=begin
+
+Sample output from this script:
+
+Raw value: 172800000       Days: 2          Hours: 48         Minutes: 2880
+Raw value: 285120000       Days: 3          Hours: 79         Minutes: 4752
+Raw value: 2160000000      Days: 25         Hours: 600        Minutes: 36000
+Raw value: 10658304000     Days: 123        Hours: 2960       Minutes: 177638
+Raw value: 37152000        Days: 0          Hours: 10         Minutes: 619
+Raw value: 86400000        Days: 1          Hours: 24         Minutes: 1440
+
+=end
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="formatDuration.rb">formatDuration.rb</a><br><h3>Ingredients:</h3>, , <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=63">Format a percent value retrieved from QuickBase</a><h3>Keywords</h3>format percent<br><h3>Problem:</h3>The QuickBase API returns percent field values as a fraction.  <br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+# change &quot;username&quot; &quot;password&quot; to your QuickBase username and password
+qbc =  QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;)
+
+# read and format the &quot;percent&quot; field from all the records in a table
+qbc.iterateRecords(&quot;dbiddbid&quot;,[&quot;percent&quot;]){|rec|
+  formattedValue  = qbc.formatPercent(rec['percent'])
+  puts &quot;Raw percent value from QuickBase: #{rec['percent']}, Formatted value: #{formattedValue}&quot;
+}
+
+=begin
+
+Sample output from this script:
+
+Raw percent value from QuickBase: 0.005, Formatted value: 0.5
+Raw percent value from QuickBase: 0.12, Formatted value: 12
+Raw percent value from QuickBase: 0.9999, Formatted value: 99.99
+Raw percent value from QuickBase: 0.5, Formatted value: 50
+Raw percent value from QuickBase: 0.13, Formatted value: 13
+Raw percent value from QuickBase: 0.33123, Formatted value: 33.12
+
+=end
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="formatPercent.rb">formatPercent.rb</a><br><h3>Ingredients:</h3>Ruby wrapper for QuickBase HTTP API, One-Click Ruby Installer for Windows, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=64">Format a currency field value retrieved from QuickBase</a><h3>Keywords</h3>currency format<br><h3>Problem:</h3>The QuickBase API returns currency values without a currency symbol, e.g. '$'.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+# change &quot;username&quot; &quot;password&quot; to your QuickBase username and password
+qbc =  QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;)
+
+# read and format the &quot;currency&quot; field from all the records in a table
+qbc.iterateRecords(&quot;dbiddbid&quot;,[&quot;currency&quot;]){|rec|
+  formattedValue  = qbc.formatCurrency(rec['currency'],{&quot;currencySymbol&quot; =&gt; &quot;$&quot;})
+  puts &quot;Raw currency value from QuickBase: #{rec['currency']}, Formatted value: #{formattedValue}&quot;
+}
+
+=begin
+
+Sample output from this script:
+
+Raw currency value from QuickBase: 7.33, Formatted value: $7.33
+Raw currency value from QuickBase: 0.33, Formatted value: $0.33
+Raw currency value from QuickBase: 1.01, Formatted value: $1.01
+Raw currency value from QuickBase: 1888888.00, Formatted value: $1888888.00
+Raw currency value from QuickBase: 1111.1111, Formatted value: $1111.1111
+Raw currency value from QuickBase: 23.23, Formatted value: $23.23
+
+=end
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="formatCurrency.rb">formatCurrency.rb</a><br><h3>Ingredients:</h3>Ruby wrapper for QuickBase HTTP API, One-Click Ruby Installer for Windows, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=65">Update username and password in one place</a><h3>Keywords</h3>username password update<br><h3>Problem:</h3>You have multiple API scripts that use the same username and password to access QuickBase, and don't want update all the scripts when the username and/or password changes.<br><h3>Solution:</h3><pre>On your computer, set environment variables for 'quickbase_username' and 'quickbase_password', and use them in your scripts instead of hard-coding them in the scripts.
+In Ruby and Perl, you can easily get the value of an environment variable using the global built-in 'ENV' variable. 
+e.g., using the Ruby API - 
+
+require 'QuickBaseClient'
+qbc = QuickBase::Client.new(ENV['quickbase_username'],ENV['quickbase_password'])
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>Ingredients:</h3>, , <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=62">Make an intranet site ASAP that connects to QuickBase</a><h3>Keywords</h3>intranet site<br><h3>Problem:</h3>You need to create a simple intranet web site very quickly and it must be connected to QuickBase.<br><h3>Solution:</h3><pre>require 'rubygems'
+require 'ramaze'
+require 'QuickBaseClient'
+require 'cgi'
+
+#-----------------------------------------------------------  
+class MainController &lt; Ramaze::Controller
+
+  map '/'
+  layout :page
+   
+  #-----------------------------------------------------------  
+  def index
+      @title = &quot;Intranet&quot;
+      html =   &quot;&lt;form method=\&quot;post\&quot; action=\&quot;/listQuickBaseApplications\&quot;&gt;&quot;
+      html &lt;&lt; &quot;&lt;p&gt;User name:&lt;input type=\&quot;text\&quot; name=\&quot;username\&quot;&gt;&lt;/input&gt;&lt;/p&gt;&quot; 
+      html &lt;&lt; &quot;&lt;p&gt;Password :&lt;input type=\&quot;text\&quot; name=\&quot;password\&quot;&gt;&lt;/input&gt;&lt;/p&gt;&quot;
+      html &lt;&lt; &quot;&lt;input type=\&quot;submit\&quot; name=\&quot;my_quickbase\&quot; value=\&quot;My QuickBase.\&quot;&gt;&quot;     
+      html &lt;&lt; &quot;&lt;/form&gt;&quot;     
+   end  
+  
+  #-----------------------------------------------------------  
+  def listQuickBaseApplications
+     @title = &quot;My QuickBase&quot;
+     if request['username'] and request['password']
+      @qbc = QuickBase::Client.new(request['username'], request['password']) 
+      if @qbc and @qbc.requestSucceeded
+         html = &quot;&quot;
+         grantedDBname = &quot;&quot;
+         grantedDBid = &quot;&quot;
+         dbproc = proc { |element|
+            if element.is_a?(REXML::Element)
+               if element.has_text? 
+                  if element.name == &quot;dbname&quot;
+                    grantedDBname = element.text
+                  elsif element.name == &quot;dbid&quot;
+                    grantedDBid = element.text
+                  end  
+               end
+            end
+         }
+         @qbc.grantedDBs(&quot;1&quot;,&quot;1&quot;,&quot;1&quot;){|grantedDB|
+             @qbc.processChildElements(grantedDB,true,dbproc)
+             html &lt;&lt; &quot;&lt;br&gt;(&lt;a href=\&quot;/showSchema/#{CGI.escape(request['username'])}/#{CGI.escape(request['password'])}/#{grantedDBid}/#{CGI.escape(grantedDBname)}\&quot;&gt;schema&lt;/a&gt;) &lt;a href=\&quot;https://www.quickbase.com/db/#{grantedDBid}\&quot;&gt;#{grantedDBname}&lt;/a&gt;&quot; 
+         }         
+         html
+      else
+       &quot;&lt;p&gt;&lt;b&gt;Oops - something went wrong while connecting to QuickBase.&lt;br&gt;Please check your username and password.&lt;/b&gt;&lt;/p&gt;&quot;
+      end    
+     else
+       &quot;&lt;p&gt;&lt;b&gt;Oops - please specifiy your QuickBase username and password.&lt;/b&gt;&lt;/p&gt;&quot;
+     end  
+  end     
+
+  #-----------------------------------------------------------  
+  def showSchema(username,password,dbid,dbname)
+     @title = &quot;#Schema for {dbname}&quot;
+      html = &quot;Oops - couldn't find the schema for that table.&quot;
+      @qbc = QuickBase::Client.new(username,password)
+      if @qbc and @qbc.requestSucceeded
+         @qbc.getSchema(dbid)
+         if @qbc.requestSucceeded
+           schema = &quot;&quot;
+           
+           # if you get 'undefined variable transitive' from the next line
+           # edit rexml\document.rb and change 'trans=false' to ''transitive=false'
+           @qbc.qdbapi.write(schema, 3)
+           
+           schema.gsub!(&quot;&lt;&quot;,&quot;&amp;lt;&quot;)
+           schema.gsub!(&quot;&gt;&quot;,&quot;&amp;gt;&quot;)
+           html = &quot;&lt;pre&gt;#{schema}&lt;/pre&gt;&quot; 
+         end
+       end   
+      html 
+    end
+    
+  #-----------------------------------------------------------  
+  def error
+      &quot;&lt;p&gt;&lt;b&gt;Sorry - that is not a valid web page on this web site.&lt;/b&gt;&lt;/p&gt;&quot;
+  end  
+
+  #-----------------------------------------------------------  
+   def page
+    %{
+&lt;html&gt;
+  &lt;head&gt;
+    &lt;title&gt;#@title&lt;/title&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;h2&gt;#@title&lt;/h2&gt;&lt;a href =&quot;/index&quot;&gt;Home&lt;/a&gt; 
+    &lt;hr&gt;
+    #@content
+  &lt;/body&gt;
+&lt;/html&gt;
+    }
+  end
+ end
+ 
+ Ramaze.start
+ </pre><br><h3>Discussion:</h3>Most people have heard of Ruby on Rails.  There is now a next generation of Ruby web application frameworks that are even simpler than Rails and that are solid and flexible enough for at least  intranet purposes.
+
+The example above makes a web site that lists the applications and tables you can access and displays the XML schema for selected tables.
+<br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="intranet.rb">intranet.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, Ramaze ruby web framework<br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=61">Get the list of field names for a table</a><h3>Keywords</h3>field names<br><h3>Problem:</h3>You want a list of all the fields in a table<br><h3>Solution:</h3><pre>
+require 'QuickBaseClient'
+
+puts &quot;Fields from the QuickBase Community Forum: &quot;
+qbc = QuickBase::Client.new
+puts qbc.getFieldNames(&quot;8emtadvk&quot;)
+
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="getFieldNames.rb">getFieldNames.rb</a><br><h3>Ingredients:</h3>, , <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=59">Get the value of an application variable</a><h3>Keywords</h3>application variable get<br><h3>Problem:</h3>You want to get that value of a global variable for your QuickBase application.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+qbc = QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;,&quot;My Application Name&quot;)
+puts qbc.getApplicationVariable(&quot;var&quot;)
+</pre><br><h3>Discussion:</h3>To get a list of all the application variables, use this instead:-
+
+p qbc.getApplicationVariables
+
+This gets a Ruby Hash of your application variables and prints it on the screen.
+
+<br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="getApplicationVariable.rb">getApplicationVariable.rb</a><br><h3>Ingredients:</h3>, , <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=58">Use the QuickBase API with JRuby </a><h3>Keywords</h3>jruby ruby api<br><h3>Problem:</h3>JRuby is a very interesting new technology that allows Java and Ruby to be combined.  It would be nice to access to QuickBase API  using JRuby.<br><h3>Solution:</h3><pre>1)
+Download and install the latest JRuby from http://dist.codehaus.org/jruby/.
+As of 1/14/08, jruby-bin-1.1RC1.zip is the latest for Windows. 
+2)
+Download the latest jruby-openssl gem from https://rubyforge.org/frs/?group_id=2014&amp;release_id=17809 .
+As of 1/14/08, jruby-openssl-0.1.1.gem is the latest version.
+Install this by running 'jruby gem install jruby-openssl-0.1.1.gem' using the jruby you installed in the previous step.
+
+3) Use the Ruby wrapper for QuickBase HTTP API with JRuby instead of the 'regular' version of Ruby.
+
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>Ingredients:</h3>JRuby, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=57">Connect QuickBase to Ruby on Rails</a><h3>Keywords</h3>rails <br><h3>Problem:</h3>You want to develop a web site using Ruby on Rails and store the data for it in QuickBase.<br><h3>Solution:</h3><pre>Use the QuickBase adapter for Rails!  It is now included in the Ruby  wrapper for the QuickBase API.
+ 
+For your convenience, a copy of the Help file for the adapter is attached to this record.  
+(Be sure to read the Help file from the latest version of the Ruby wrapper when you are ready to try out the adapter.)
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="quickbase_adapter.rb.htm">quickbase_adapter.rb.htm</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=52">Get summary records </a><h3>Keywords</h3>summary<br><h3>Problem:</h3>The QuickBase API_DoQuery call does not let you get the records from a summary report.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;)
+
+puts &quot;\nSummary of types of published applications in the QuickBase Application Library:\n&quot;
+printf( &quot;\n%-20s %10s %10s&quot;,&quot;Type&quot;,&quot;Count&quot;,&quot;Popularity\n&quot;)
+qbc.iterateSummaryRecords(&quot;bbtt9cjr7&quot;, [&quot;Type&quot;,&quot;Popularity&quot;]){|record|
+   if record[&quot;Type&quot;]
+      printf( &quot;\n%-20s %10s %10s&quot;,record[&quot;Type&quot;],record[&quot;Count&quot;],record[&quot;Popularity:Total&quot;])
+   end
+}
+puts &quot;\n\nCompare the output to Summary at the bottom of this report - \n\nhttps://www.quickbase.com/db/bbtt9cjr7?a=q&amp;qid=28\n\n&quot;
+</pre><br><h3>Discussion:</h3>This example reads all the records from the Application Library and summarizes them by type.  The output is similar to what you see at the bottom of this report - https://www.quickbase.com/db/bbtt9cjr7?a=q&amp;qid=28 .
+<br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="iterateSummaryRecords.rb">iterateSummaryRecords.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=54">Select records using an SQL query</a><h3>Keywords</h3>sql query<br><h3>Problem:</h3>You want to use an SQL statement to get  records, instead of using the QuickBase query language.<br><h3>Solution:</h3><pre>
+require 'QuickBaseClient'
+qbc = QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;,&quot;QuickBase Community Forum&quot;)
+recs = qbc.doSQLQuery(&quot;SELECT Subject,Message FROM Messages WHERE Subject = 'Ruby wrapper for QuickBase HTTP API'&quot;,:Array)
+recs.each{ |rec| 
+   subject = rec['Subject']
+   message = rec['Message']
+   message.gsub!(&quot;
+&quot;,&quot;\n&quot;)
+   puts &quot;Subject: --------------- #{subject} ---------------\nMessage: #{message}\n\n&quot;
+}
+
+</pre><br><h3>Discussion:</h3>The doSQLQuery method was added to the Ruby API primarily for integration with Ruby on Rails.  However, you can call the method directly using very simple SELECT statements. This example lists all the records in the QuickBase Community forum with the subject 'Ruby wrapper for QuickBase HTTP API'.
+<br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="sqlQuery.rb">sqlQuery.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=53">Upload all the files in a folder into new QuickBase records</a><h3>Keywords</h3>upload folder directory<br><h3>Problem:</h3>You want to upload all the files in a folder into a QuickBase table.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+def uploadFiles1(username,password,cwd)
+  qbc = QuickBase::Client.new(username,password)
+  dbid = qbc.findDBByName(cwd)
+  if dbid.nil?
+    puts &quot;Creating a QuickBase application called '#{cwd}'.&quot;
+    dbid = qbc.createDatabase(cwd,&quot;Files uploaded from #{username}\'s #{cwd} folder.&quot;)
+    qbc.addField(dbid, &quot;Description&quot;,&quot;text&quot;)
+    qbc.addField(dbid, &quot;File Attachment&quot;,&quot;file&quot;)
+  else
+    puts &quot;\nUsing the existing QuickBase application called '#{cwd}'.\n&quot;
+    qbc.getSchema(dbid)
+    dbid = qbc.lookupChdbid(cwd.dup)
+  end
+  uploadFiles3(qbc,dbid,&quot;File Attachment&quot;,cwd)
+  puts &quot;\nYou can repeat this upload using uploadFilesFromFolder.exe #{username} #{password} #{dbid} file_attachment&quot;
+end
+
+def uploadFiles2(username,password,dbid,fieldName,cwd)
+  qbc = QuickBase::Client.new(username,password)
+  uploadFiles3(qbc,dbid,fieldName,cwd)
+  puts &quot;\nYou can repeat this upload using uploadFilesFromFolder.exe #{username} #{password} #{dbid} #{fieldName.gsub( /\W/, '_' )}.&quot;
+end
+
+def uploadFiles3(qbc,dbid,fieldName,cwd)
+  Dir.foreach(cwd){|file|
+    next if file == &quot;.&quot; or file == &quot;..&quot;
+    renamedFile = file.dup
+    renamedFile.gsub!(&quot;&amp;&quot;,&quot;And&quot;)
+    renamedFile.gsub!(&quot;'&quot;,&quot; &quot;)
+    if renamedFile != file
+       File.rename(file,renamedFile)
+    end
+    puts &quot;Uploading #{renamedFile}&quot;
+    qbc.uploadFile(dbid,renamedFile,fieldName)
+  }
+  puts &quot;\nFinished uploading files.&quot;
+end
+
+def getInputAndRun
+   mycwd = Dir.pwd.gsub('/','\\')
+
+   if ARGV[3]
+     uploadFiles2(ARGV[0],ARGV[1],ARGV[2],ARGV[3],mycwd)
+   else
+   
+     print &quot;\nPlease enter your QuickBase username: &quot;
+     username = gets.chomp
+     print &quot;\nPlease enter your QuickBase password: &quot;
+     password = gets.chomp
+     print &quot;\nEnter 'y' if to use or create a '#{mycwd}' QuickBase application for the files: &quot;
+     y = gets.chomp
+     
+     if y == &quot;y&quot; or y == &quot;Y&quot;
+       uploadFiles1(username,password,mycwd)
+     else
+       print &quot;\nPlease enter the id of your target QuickBase table: &quot;
+       dbid = gets.chomp
+       print &quot;\nPlease enter the name of the QuickBase File Attachment field in your table. (e.g. File): &quot;
+       fieldName = gets.chomp
+       uploadFiles2(username,password,dbid,fieldName,mycwd)
+     end
+   end
+
+end
+
+getInputAndRun
+</pre><br><h3>Discussion:</h3>This script creates a QuickBase application with the same name as the folder you are in, and uploads all the files from the folder into the application.  Alternatively, you can upload the files into a different table if you know the DBID of the table and the name of the target File Attachment field in the table.
+
+<br><h3>See Also:</h3>https://www.quickbase.com/db/bcdcajmrg?a=dr&amp;r=b2&amp;rl=s92
+https://www.quickbase.com/db/bcdcajmrg?a=dr&amp;r=bz&amp;rl=un4<br><h3>File Attachment:</h3><a href="uploadFilesFromFolder.rb">uploadFilesFromFolder.rb</a><br><h3>Ingredients:</h3>Ruby wrapper for QuickBase HTTP API, One-Click Ruby Installer for Windows, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=55">Download file attachments from a table to a local hard drive</a><h3>Keywords</h3>download file<br><h3>Problem:</h3><br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+def downloadFiles1(username,password,cwd)
+  qbc = QuickBase::Client.new(username,password)
+  dbid = qbc.findDBByName(cwd)
+  qbc.getSchema(dbid)
+  dbid = qbc.lookupChdbid(cwd.dup)
+  downloadFiles3(qbc,username,password,dbid,&quot;File Attachment&quot;)
+end
+
+def downloadFiles2(username,password,dbid,fieldName)
+  qbc = QuickBase::Client.new(username,password)
+  qbc.getSchema(dbid)
+  downloadFiles3(qbc,username,password,dbid,fieldName)
+end
+
+def downloadFiles3(qbc,username,password,dbid,fieldName)
+
+   fieldNames = qbc.getFieldNames(dbid)
+   clist = &quot;&quot;
+   fid = &quot;&quot;
+   fieldNames.each{|f|
+      id = qbc.lookupFieldIDByName(f)
+      fid = id.dup if f == fieldName
+      clist &lt;&lt; id
+      clist &lt;&lt; &quot;.&quot;
+   }
+   clist[-1,1]=&quot;&quot;
+
+   if fid == &quot;&quot;
+     fid = fieldName.dup
+     fieldName = qbc.lookupFieldNameFromID(fid)
+   end
+
+   qbc.iterateRecords(dbid,fieldNames,nil,nil,nil,clist,&quot;3&quot;){|r|
+      if r and r[fieldName] and r[fieldName].length &gt; 0 
+         next if r[fieldName].include?(&quot;https:&quot;) or r[fieldName].include?(&quot;http:&quot;)
+         puts &quot;Downloading #{r[fieldName]}&quot;
+         qbc.downLoadFile(dbid,r[&quot;Record ID#&quot;],fid)
+         if qbc.fileContents
+            filename = r[fieldName]
+            File.open( filename, &quot;wb&quot; ){|f|
+               f.write(qbc.fileContents)
+            }
+         end   
+      end
+   }
+  puts &quot;\nFinished downloading files in QuickBase Record ID# order.&quot;
+  puts &quot;(Later copies of files overwrite previous copies).&quot;
+  puts &quot;\nYou can repeat this download using downloadFilesToFolder.exe #{username} #{password} #{dbid} #{fid}.&quot;
+end
+
+def getInputAndRun
+   mycwd = Dir.pwd.gsub('/','\\')
+
+   if ARGV[3]
+     downloadFiles2(ARGV[0],ARGV[1],ARGV[2],ARGV[3])
+   else
+   
+     print &quot;\nPlease enter your QuickBase username: &quot;
+     username = gets.chomp
+     print &quot;\nPlease enter your QuickBase password: &quot;
+     password = gets.chomp
+     print &quot;\nEnter 'y' if to download the files from a '#{mycwd}' QuickBase application: &quot;
+     y = gets.chomp
+     
+     if y == &quot;y&quot; or y == &quot;Y&quot;
+       downloadFiles1(username,password,mycwd)
+     else
+       print &quot;\nPlease enter the id of your QuickBase table: &quot;
+       dbid = gets.chomp
+       print &quot;\nPlease enter the name or id of the QuickBase File Attachment field in your table. (e.g. File): &quot;
+       fieldName = gets.chomp
+       downloadFiles2(username,password,dbid,fieldName)
+     end
+   end
+
+end
+
+getInputAndRun
+</pre><br><h3>Discussion:</h3>This script looks for a QuickBase table with the same name as your current working directory and downloads all the file attachments to your current working directory.  The script starts with older records first, so newer copies of files will normally overwrite older copies.
+
+You can also download the files from any table and file attachment field if you know the table id and the file attachment field id.
+<br><h3>See Also:</h3>https://www.quickbase.com/db/bcdcajmrg?a=dr&amp;r=bx&amp;rl=un3<br><h3>File Attachment:</h3><a href="downloadFilesToFolder.rb">downloadFilesToFolder.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=56">Run a Ruby API script without installing Ruby</a><h3>Keywords</h3>ruby install rubyscript2exe<br><h3>Problem:</h3>You have a written a ruby script that you want others to run on their computer, without them having to install Ruby. <br><h3>Solution:</h3><pre>RubyScript2Exe is a utility that creates a Windows executable file from a Ruby script.
+
+E.g. if you have a Ruby script called 'addRecs.rb' that adds records to a QuickBase table, you can create an 'addRecs.exe' that any Windows user can run without having to install Ruby.
+
+This makes it easy to write QuickBase API scripts in Ruby that anybody can run.
+ 
+RubyScript2Exe can also generate executable files for Mac and Linux.
+
+RubyScript2Exe can be downloaded from here - http://rubyforge.org/projects/rubyscript2exe/
+</pre><br><h3>Discussion:</h3>The file attached to this recipe is Windows .exe file created from the uploadFilesFromFolder.rb script from the recipe here - https://www.quickbase.com/db/bcdcajmrg?a=dr&amp;r=bx&amp;rl=s92 <br><h3>See Also:</h3>https://www.quickbase.com/db/bcdcajmrg?a=dr&amp;r=bx&amp;rl=s92<br><h3>File Attachment:</h3><a href="uploadFilesFromFolder.exe">uploadFilesFromFolder.exe</a><br><h3>Ingredients:</h3>rubyscript2exe, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=51">Find the data type of a field from its name</a><h3>Keywords</h3>data field type<br><h3>Problem:</h3>You need to get the data type of a field using the field's name.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new
+
+qbc.getSchema(&quot;8emtadvk&quot;) #Messages table in QuickBase Community Forum
+
+puts qbc.lookupFieldTypeByName(&quot;Thread&quot;)
+
+# the line above prints &quot;url&quot; on the screen
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="lookupFieldTypeByName.rb">lookupFieldTypeByName.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=50">Display a more readable version of QuickBase responses</a><h3>Keywords</h3>display print XML<br><h3>Problem:</h3>QuickBase responds to requests by sending you XML. You need a slightly more readable version of this data to look at, probably for debugging or development purposes.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;)
+
+qbc.getSchema(qbc.findDBByname(&quot;Application Library&quot;))
+
+qbc.printChildElements(qbc.qdbapi)
+
+=begin
+
+ :
+ qdbapi :
+  action  = API_getSchema
+  errcode  = 0
+  errtext  = No error
+  table :
+   name  = Application Library
+   desc  = This QuickBase contains user and QuickBase created applications that can be used by any customer of QuickBase.
+   original :
+    table_id  = bbtt9cjr6
+    cre_date  = 1152727983612
+    mod_date  = 1171485722502
+    next_record_id  = 1
+    next_field_id  = 12
+    next_query_id  = 5
+    def_sort_fid  = 6
+    def_sort_order  = 0
+   chdbids :
+    chdbid (name=_dbid_applications ) = bbtt9cjr7
+    chdbid (name=_dbid_versions ) = bbtt9cjr8
+    chdbid (name=_dbid_documents ) = bbtt9cjr9
+    chdbid (name=_dbid_reviews ) = bbtt9cjsc
+    chdbid (name=_dbid_installs_requests ) = bbvw9jb72
+    chdbid (name=_dbid_feedback ) = bbt4qb5gr
+    chdbid (name=_dbid_featured_apps ) = bbt9vg4u5
+    chdbid (name=_dbid_categories ) = bbtt9cjsg
+   lastluserid  = 0
+   queries :
+    query (id=1 ):
+     qyname  = List All
+     qytype  = table
+     qycrit  = {0.CT.''}
+     qycalst  = 0.0
+    query (id=2 ):
+     qyname  = List Changes
+     qytype  = table
+     qydesc  = Sorted by Date Modified
+     qycrit  = {0.CT.''}
+     qyopts  = so-D.onlynew.
+     qycalst  = 0.0
+   fields  =
+
+=end
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="printChildElements.rb">printChildElements.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=49">Set a deviation field for a group of records</a><h3>Keywords</h3>average deviation<br><h3>Problem:</h3>Each record in a set of records has a number and you need to show each record's deviation from the set's average in a separate deviation field in the record. <br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;)
+
+qbc.applyDeviationToRecords(&quot;bcc9qcnxw&quot;,&quot;number&quot;,&quot;deviation&quot;)
+
+numberAverage = qbc.average(&quot;bcc9qcnxw&quot;,[&quot;number&quot;])
+puts &quot;number average: #{numberAverage['number']}&quot;
+
+qbc.iterateRecords(&quot;bcc9qcnxw&quot;,[&quot;number&quot;,&quot;deviation&quot;]){|record|
+   puts &quot;number: #{record['number']}, deviation: #{record['deviation']}&quot;
+}
+
+=begin
+
+Sample output of above script:-
+
+number average: 31.0
+number: 20, deviation: 11
+number: 36, deviation: 5
+number: 56, deviation: 25
+number: 12, deviation: 19
+
+=end
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3>percent<br><h3>File Attachment:</h3><a href="deviation.rb">deviation.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=48">Set a percentage field for a group of records</a><h3>Keywords</h3>percent sum<br><h3>Problem:</h3>Each record in a set of records has a number and you need to show each record's percentage of total in a separate percentage field in the record. <br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;)
+
+qbc.applyPercentToRecords(&quot;bcc9qcnxw&quot;,&quot;number&quot;,&quot;percent&quot;)
+
+numberTotal = qbc.sum(&quot;bcc9qcnxw&quot;,[&quot;number&quot;])
+puts &quot;number total: #{numberTotal['number']}&quot;
+
+qbc.iterateRecords(&quot;bcc9qcnxw&quot;,[&quot;number&quot;,&quot;percent&quot;]){|record|
+   puts &quot;number: #{record['number']}, percent: #{record['percent'].to_f*100}&quot;
+}
+
+percentTotal = qbc.sum(&quot;bcc9qcnxw&quot;,[&quot;percent&quot;])
+puts &quot;percent total: #{percentTotal['percent'].to_f*100}&quot;
+
+=begin
+
+Sample output of above script:-
+
+number total: 124.0
+number: 20, percent: 16.12903225806
+number: 36, percent: 29.03225806452
+number: 56, percent: 45.16129032258
+number: 12, percent: 9.67741935484
+percent total: 100.0
+
+=end
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3>deviation<br><h3>File Attachment:</h3><a href="percent.rb">percent.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=4">Upload data directly from Excel into QuickBase</a><h3>Keywords</h3>Excel<br><h3>Problem:</h3>You have data in Excel that changes frequently and it is time-consuming to import it into QuickBase.<br><h3>Solution:</h3><pre>#The script below adds records directly from Excel into a
+#QuickBase table. You will obviously need to modify it for 
+#your own purposes.
+
+
+require 'QuickBaseClient'
+
+#sign into a QuickBase application using your user name and password
+qbc = QuickBase::Client.new( &quot;my_username&quot;, &quot;my_password&quot;, &quot;my_application&quot; )
+
+# if your application is a multi-table application, switch 
+# to the right table
+qbc.lookupChdbid( &quot;Imported Excel data&quot; )
+
+# delete all the records in the &quot;Imported Excel data&quot; table then
+# import new data from an Excel file. The field names must be at the top of the file.
+# 'h' is the letter of the last column to import.
+# Note: any commas (',') in the data are converted to semi-colons (';').
+# Uncomment the following line if you want to make your QuickBase table match the contents of your Excel file.
+
+#qbc._purgeRecords
+
+qbc._importFromExcel( &quot;ImportedExcelData.xls&quot;, 'h' )
+
+#sign out of QuickBase
+qbc.signOut
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="uploadExcelData.rb">uploadExcelData.rb</a><br><h3>Ingredients:</h3>Ruby wrapper for QuickBase HTTP API, One-Click Ruby Installer for Windows, Excel<br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=47">Get records matching a regular expression, e.g. 'Name' starts with A through E</a><h3>Keywords</h3>match regular expression<br><h3>Problem:</h3>You need to find records with fields matching a range of values, such as 'Name' starting with 'A' through 'E'.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new
+
+puts &quot;----------------------------------------------------------------------&quot;
+puts &quot;Latest Community Forum records with Subject beginning with A through E&quot;
+puts &quot;----------------------------------------------------------------------&quot;
+
+qbc.iterateFilteredRecords(&quot;8emtadvk&quot;,[{&quot;Subject&quot;=&gt;&quot;^[A-E].+&quot;}],nil,nil,&quot;List Changes&quot;,nil,nil,&quot;structured&quot;,&quot;num-100&quot;) {|record|
+   puts record[&quot;Subject&quot;]
+}
+</pre><br><h3>Discussion:</h3>QuickBase queries will not always be able to find particular sets of records. Filtering records using regular expressions can overcome this limitation. Regular expressions can also reduce the need for complex queries and formula fields.
+<br><h3>See Also:</h3>iterateRecords, iterateJoinRecords, iterateUnionRecords<br><h3>File Attachment:</h3><a href="iterateFilteredRecords.rb">iterateFilteredRecords.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=46">Get the average of the values in a field from the records in a query</a><h3>Keywords</h3>average<br><h3>Problem:</h3>You need to get the average value of a field from the records returned from a query<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;)
+
+qbc.iterateRecords(&quot;bcct3jb3b&quot;,[&quot;number&quot;]){|record|
+   puts &quot;number: #{record['number']}&quot; 
+}
+
+average = qbc.average(&quot;bcct3jb3b&quot;,[&quot;number&quot;])
+puts &quot;average: #{average['number']}&quot;
+
+=begin
+
+number: 62
+number: 21
+number: 76
+number: 13
+number: 34
+number: 2
+number: 66
+number: 2
+number: 3
+average: 31.0
+
+=end</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3>min,max,sum,count<br><h3>File Attachment:</h3><a href="average.rb">average.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=45">Get a count of the records in a query with a value</a><h3>Keywords</h3>count<br><h3>Problem:</h3>You need to get the number of records in a query that have a value in one or more fields<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;)
+
+qbc.iterateRecords(&quot;bcct3jb3b&quot;,[&quot;number&quot;]){|record|
+   puts &quot;number: #{record['number']}&quot; 
+}
+
+count = qbc.count(&quot;bcct3jb3b&quot;,[&quot;number&quot;])
+puts &quot;count: #{count['number']}&quot; 
+
+=begin
+
+number: 62
+number: 21
+number: 76
+number: 13
+number: 34
+number: 2
+number: 66
+number: 2
+number: 3
+count: 9
+
+=end</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3>min,max,sum,average<br><h3>File Attachment:</h3><a href="count.rb">count.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=44">Get the sum of the values in a field from records in a query</a><h3>Keywords</h3>sum <br><h3>Problem:</h3>You need to get the sum of the values in one or more fields from the records returned by a query<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;)
+
+qbc.iterateRecords(&quot;bcct3jb3b&quot;,[&quot;number&quot;]){|record|
+   puts &quot;number: #{record['number']}&quot;
+}
+
+sum = qbc.sum(&quot;bcct3jb3b&quot;,[&quot;number&quot;])
+puts &quot;sum: #{sum['number']}&quot;
+
+=begin
+
+number: 62
+number: 21
+number: 76
+number: 13
+number: 34
+number: 2
+number: 66
+number: 2
+number: 3
+sum: 279.0
+
+=end
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3>min,max,count,average<br><h3>File Attachment:</h3><a href="sum.rb">sum.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=43">Get the maximum value of a field from query results</a><h3>Keywords</h3>maximum value<br><h3>Problem:</h3>You need to get the maximum value of one or more fields from the records returned from a query<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;)
+
+qbc.iterateRecords(&quot;bcct3jb3b&quot;,[&quot;number&quot;]){|record|
+   puts &quot;number: #{record['number']}&quot; 
+}
+
+max = qbc.max(&quot;bcct3jb3b&quot;,[&quot;number&quot;])
+puts &quot;max: #{max['number']}&quot; 
+
+=begin
+
+number: 62
+number: 21
+number: 76
+number: 13
+number: 34
+number: 2
+number: 66
+number: 2
+number: 3
+max: 76.0
+
+=end
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3>min, sum, count, average<br><h3>File Attachment:</h3><a href="max.rb">max.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=42">Get the minimum value of a field from query results</a><h3>Keywords</h3>minimum value<br><h3>Problem:</h3>You need to get the minimum value of one or more fields from the records returned from a query<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;)
+
+qbc.iterateRecords(&quot;bcct3jb3b&quot;,[&quot;number&quot;]){|record|
+   puts &quot;number: #{record['number']}&quot; 
+}
+
+min = qbc.min(&quot;bcct3jb3b&quot;,[&quot;number&quot;])
+puts &quot;min: #{min['number']}&quot; 
+
+=begin
+
+number: 62
+number: 21
+number: 76
+number: 13
+number: 34
+number: 2
+number: 66
+number: 2
+number: 3
+min: 2.0
+
+=end
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3>max, sum, count, average<br><h3>File Attachment:</h3><a href="min.rb">min.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=41">Loop through records merged from two or more tables</a><h3>Keywords</h3>merge union tables query<br><h3>Problem:</h3>You want to get records using the same fields from two or more tables and/or queries and loop through the merged records.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;)
+
+# make a list of the tables to be merged
+table1 = Hash.new
+table1[&quot;dbid&quot;]=&quot;bccr737mz&quot;
+table2 = Hash.new
+table2[&quot;dbid&quot;]=&quot;bccr737m2&quot;
+tablesToMerge = Array[table1,table2]
+
+# fields are expected to be the same in both tables
+fields = Array[&quot;c&quot;]
+
+puts &quot;------ Merged records from 2 tables ------&quot;
+recnum = 1
+qbc.iterateUnionRecords(tablesToMerge,fields) {|uniqueRecord|
+   print &quot;\n#{recnum}. &quot;
+   uniqueRecord.each{|field,value|
+      print &quot;#{field}: #{value}, &quot;
+   }
+   recnum += 1
+}
+
+=begin
+
+The output using unrealistically simple data is below.
+
+------ Merged records from 2 tables ------
+
+1. c: ad,
+2. c: c,
+3. c: c1,
+4. c: v,
+5. c: Get records containing a certain value,
+
+=end
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="iterateUnionRecords.rb">iterateUnionRecords.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=40">Loop through records joined from two or more tables</a><h3>Keywords</h3>join loop multiple tables<br><h3>Problem:</h3>You need to read records from multiple tables, join records that share the same values is specific fields, and loop through the joined records.<br><h3>Solution:</h3><pre>
+require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;)
+
+# make a list of the tables to be joined
+tablesToJoin = Array.new
+
+table1 = Hash.new
+table1[&quot;dbid&quot;]=&quot;bccr737mz&quot;              #table id
+table1[&quot;fields&quot;] = Array[&quot;a&quot;,&quot;b&quot;,&quot;c&quot;] #fields to retrieve
+table1[&quot;joinfield&quot;] = &quot;c&quot;                 #field to compare across all tables' records
+tablesToJoin &lt;&lt; table1
+
+table2 = Hash.new
+table2[&quot;dbid&quot;]=&quot;bccr737m2&quot;
+table2[&quot;fields&quot;] = Array[&quot;c&quot;,&quot;d&quot;,&quot;e&quot;]
+table2[&quot;joinfield&quot;] = &quot;c&quot;
+tablesToJoin &lt;&lt; table2
+
+table3 = Hash.new
+table3[&quot;dbid&quot;]=&quot;bccr737m3&quot;
+table3[&quot;fields&quot;] = Array[&quot;cc&quot;,&quot;g&quot;,&quot;gf&quot;]
+table3[&quot;joinfield&quot;] = &quot;cc&quot;
+tablesToJoin &lt;&lt; table3
+
+puts &quot;------ Joined records from 3 tables ------&quot;
+recnum = 1
+qbc.iterateJoinRecords(tablesToJoin) {|joinedRecord|
+   print &quot;\n#{recnum}. &quot;
+   joinedRecord.each{|field,value|
+      print &quot;#{field}: #{value}, &quot;
+   }
+   recnum += 1
+}
+
+=begin
+
+The output using unrealistically simple data is below.
+Note that field 'c' is in two tables and is merged.
+The value of 'c' from the second table is included in the joined record.
+
+------ Joined records from 3 tables ------
+
+1. cc: c, a: a2, b: b2, c: c, d: d, e: e, g: g, gf: sda,
+2. cc: c, a: a2, b: b2, c: c, d: sadf, e: df, g: cv, gf: sdafad,
+3. cc: c, a: a2, b: b2, c: c, d: sadf, e: df, g: sad, gf: sad,
+4. cc: c, a: a2, b: b2, c: c, d: d, e: e, g: sad, gf: sad,
+5. cc: c, a: a2, b: b2, c: c, d: sadf, e: df, g: g, gf: sda,
+6. cc: c, a: a2, b: b2, c: c, d: sadf, e: df, g: cv, gf: sdafad,
+7. cc: c, a: a2, b: b2, c: c, d: d, e: e, g: sad, gf: sad,
+8. cc: c, a: a2, b: b2, c: c, d: sadf, e: df, g: sad, gf: sad,
+9. cc: c, a: a2, b: b2, c: c, d: sadf, e: df, g: g, gf: sda,
+10. cc: c, a: a2, b: b2, c: c, d: d, e: e, g: cv, gf: sdafad,
+11. cc: c, a: a2, b: b2, c: c, d: sadf, e: df, g: sad, gf: sad,
+12. cc: c, a: a, b: b, c: c, d: d, e: e, g: g, gf: sda,
+13. cc: c, a: a, b: b, c: c, d: sadf, e: df, g: cv, gf: sdafad,
+14. cc: c, a: a, b: b, c: c, d: sadf, e: df, g: sad, gf: sad,
+15. cc: c, a: a, b: b, c: c, d: d, e: e, g: sad, gf: sad,
+16. cc: c, a: a, b: b, c: c, d: sadf, e: df, g: g, gf: sda,
+17. cc: c, a: a, b: b, c: c, d: sadf, e: df, g: cv, gf: sdafad,
+18. cc: c, a: a, b: b, c: c, d: d, e: e, g: sad, gf: sad,
+19. cc: c, a: a, b: b, c: c, d: sadf, e: df, g: sad, gf: sad,
+20. cc: c, a: a, b: b, c: c, d: sadf, e: df, g: g, gf: sda,
+21. cc: c, a: a, b: b, c: c, d: d, e: e, g: cv, gf: sdafad,
+22. cc: c, a: a, b: b, c: c, d: sadf, e: df, g: sad, gf: sad,
+
+=end
+</pre><br><h3>Discussion:</h3>This is similar to the SQL JOIN statement.<br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="iterateJoinRecords.rb">iterateJoinRecords.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=39">Get the choices available for a multiple-choice text field</a><h3>Keywords</h3>choices multiple text get<br><h3>Problem:</h3>You want to get the list of choices available for a multiple-choice text field.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;)
+
+# get the available choices for the 'Ingredient 1' field in the 
+# 'Recipes' table of the 'QuickBase API Cookbook v2' application
+choices = qbc.getFieldChoices( &quot;bb2mad4sr&quot;, &quot;Ingredient 1&quot; )
+
+if choices
+   puts &quot;\n------ Ingredients choices from the QuickBase API Cookbook v2 ------\n\n&quot;
+   puts choices.join(&quot;\n&quot;) 
+end
+</pre><br><h3>Discussion:</h3>This also works for 'shared' multiple-choice text fields.<br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="getFieldChoices.rb">getFieldChoices.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=38">Run API code when specific emails arrive in Outlook</a><h3>Keywords</h3>Outlook email API event<br><h3>Problem:</h3>You want to run API code when specific emails arrive in your Outlook inbox, e.g. emails from QuickBase.<br><h3>Solution:</h3><pre>Create a Windows batch (.bat) file that runs your API code
+======================================
+1) Make a batch file, e.g. c:\iterateRecords.bat, that runs the iterateRecords.rb from this Cookbook :-
+
+ruby iterateRecords.rb
+
+Create an Outlook rule that runs c:\iterateRecords.bat
+===================================
+1) In Outlook, select the 'Tools' menu, then the 'Rules and Alerts' menu.
+2) Create a new rule from a blank rule (not from a template).
+3) The rule should run when emails arrive into your inbox.
+4) Make the rule run when 'testmyrule' is in the Subject of the incoming email.
+5) When the rule runs, it should 'run an application'. The application to run should be c:\iterateRecords.bat.
+6) You can try the rule out by sending yourself an email with 'testmyrule' in the Subject.
+
+Create a QuickBase email notification 
+========================
+These steps assume your Outlook email address is associated with your QuickBase account.
+
+1) Go to the QuickBase Commuinity Forum to set up an email notification - https://www.quickbase.com/db/bbqm84dzy?a=EmailList 
+2) Click 'Create a New Email' 
+3) Select 'Email Notification'
+4) Put 'testmyrule' in the 'Subject' box
+5) Click 'Save'
+
+When someone modifies a record in the Community Forum, you will get an email from QuickBase with 'testmyrule' in the subject that will run the iterateRecords.rb ruby API script.
+
+</pre><br><h3>Discussion:</h3>An alternative to this that doesn't require Outlook or batch files is to use the QuickBaseEventNotifier.rb that comes with the Ruby API.
+<br><h3>See Also:</h3>iterateRecords.rb
+QuickBaseEventNotifier.rb
+https://www.quickbase.com/db/bb2mad4sr?a=dr&amp;r=5&amp;rl=e68
+<br><h3>Ingredients:</h3>Outlook, Batch file, Ruby wrapper for QuickBase HTTP API<br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=37">Remove all records from a table</a><h3>Keywords</h3>remove delete records<br><h3>Problem:</h3>You need to empty out the records from a table programmatically<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+#loop { 
+
+   qbc = QuickBase::Client.new( &quot;my_username&quot;, &quot;my_password&quot;, &quot;my_application&quot; )
+   qbc.lookupChdbid( &quot;my_table&quot; ) 
+   qbc._purgeRecords
+   qbc.signOut
+   
+#   qbc = nil
+#   sleep(60*60)
+#}
+
+# to empty a table automatically every hour, remove 
+# the '#' from the beginning of the lines above  
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="purgeRecords.rb">purgeRecords.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=36">Process records returned from a query as field/value pairs</a><h3>Keywords</h3>hash process record query<br><h3>Problem:</h3>You want to process the records returned from a query using an iterator rather than an array.  <br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new
+puts &quot; ---------- Records from the QuickBase Community Forum containing 'Ruby wrapper' ----------&quot;
+
+recordNumber=1
+
+qbc.iterateRecords(&quot;8emtadvk&quot;,[&quot;Subject&quot;,&quot;Created&quot;,&quot;Message&quot;],&quot;{'0'.CT.'Ruby wrapper'}&quot;) {|record|
+
+   print &quot;\n\n#{recordNumber}.&quot;
+   
+   print &quot;\nSubject: &quot;, record[&quot;Subject&quot;] 
+   
+   print &quot;\nCreated: &quot;, qbc.formatDate(record[&quot;Created&quot;]) 
+   
+   message = record[&quot;Message&quot;]
+   message.gsub!(&quot;
+&quot;,&quot;\n&quot;) if message.include?(&quot;
+&quot;)
+   
+   print &quot;\nMessage: &quot;, message
+   
+   recordNumber += 1
+}
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="iterateRecords.rb">iterateRecords.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=35">Modify fields in all records matching a query</a><h3>Keywords</h3>modify fields query<br><h3>Problem:</h3>You want to set the value of one or more fields in all records matching a query<br><h3>Solution:</h3><pre>
+require 'QuickBaseClient'
+require 'Date'
+
+# login and connect to the &quot;Email Outbox&quot; application
+qbc = QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;,&quot;Email Outbox&quot;)
+
+# find the &quot;Messages&quot; table in the &quot;Email Outbox&quot; application
+outboxMessagesTable = qbc.lookupChdbid(&quot;Messages&quot;)
+
+today = Date.today
+today = today.strftime(&quot;%m-%d-%Y&quot;)
+
+# for every record that was created today, change the &quot;from&quot; field to &quot;fred@bedrock.com&quot; and the &quot;to&quot; field to &quot;wilma@bedrock.com&quot;
+qbc.editRecords(outboxMessagesTable,{&quot;from&quot;=&gt;&quot;fred@bedrock.com&quot;,&quot;to&quot;=&gt;&quot;wilma@bedrock.com&quot;},&quot;{'1'.EX.'#{today}'}&quot;)
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="editRecords.rb">editRecords.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=34">Run code when records are added or modified</a><h3>Keywords</h3>add change event notification code<br><h3>Problem:</h3>You want to run code whenever a record is added or modified in a particular table<br><h3>Solution:</h3><pre>require 'QuickBaseEventNotifier'
+
+# check the QuickBase Community Forum every minute for new or modified records
+QuickBase::EventNotifier.watchAndRunCode(&quot;username&quot;,&quot;password&quot;,&quot;8emtadvk&quot;) {|eventNotification|
+   # run this code when a record is added or modified   
+   qbc = QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;)
+   fiveMinutesAgo = Time.now - (60*5)
+   qbc.doQuery(&quot;8emtadvk&quot;, &quot;{'2'.GT.'#{fiveMinutesAgo.to_i}'}&quot;){ |record|
+      # print records added less than 5 minutes ago
+      qbc.printChildElements(record)
+   }
+}
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="printNewRecords.rb">printNewRecords.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=33">List all the QuickBase applications you can access</a><h3>Keywords</h3>list accessible applications<br><h3>Problem:</h3>You need a list of the QuickBase applications that you have access to<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;)
+qbc.grantedDBs() { |database|
+   qbc.printChildElements(database)
+}
+</pre><br><h3>Discussion:</h3>'printChildElements' is useful for printing a simplified version of any XML data returned by QuickBase.<br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="listAccessibleApplications.rb">listAccessibleApplications.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=32">Stop sending API requests to QuickBase when an error occurs</a><h3>Keywords</h3>stop API requests<br><h3>Problem:</h3>You know that there is no value in sending further API requests to QuickBase when a request fails and want to stop sending requests  immediately.<br><h3>Solution:</h3><pre>require 'QuickBaseClient.rb'
+
+begin
+   qbc = QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;)
+   qbc.stopOnError=true
+   qbc.doQuery( &quot;bad_database_id&quot; ) # make a bad request
+   qbc.doQuery( &quot;bb2mad4sr&quot; ) # QuickBase API Cookbook v2
+rescue StandardError =&gt; exception
+   puts &quot;\n\n ***** Something went wrong during a request to QuickBase: ****\n#{exception}&quot;
+end
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="stopOnError.rb">stopOnError.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=9">Updating the latest copy of a file in a particular Quickbase record every hour</a><h3>Keywords</h3>Upload update file<br><h3>Problem:</h3>You have a file or document on your local or drive or network drive that someone has to upload into QuickBase several times a day.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+loop {
+  qbc = QuickBase::Client.new( &quot;my_username&quot;, &quot;my_password&quot;, &quot;my_application&quot; )
+  qbc.lookupChdbid( &quot;Documents&quot; ) # the table containing the files
+
+  # &quot;12&quot; is the number of the record (Record ID#) to be modified
+  # &quot;Document&quot; is the name of the field containing a file attachment
+  # &quot;Version&quot; and &quot;Date&quot; are additional field values to modify in the record
+
+  qbc.updateFile( qbc.dbid, &quot;12&quot;, &quot;my_file.doc&quot;, &quot;Document&quot;, { &quot;Version&quot; =&gt; &quot;6&quot;,   &quot;Note&quot; =&gt; &quot;Updated 01/30/2006&quot; } )
+
+  qbc.signOut
+  qbc = nil
+
+  # wait one hour
+  sleep(60*60)
+}</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="uploadFileEveryHour.rb">uploadFileEveryHour.rb</a><br><h3>Ingredients:</h3>Ruby wrapper for QuickBase HTTP API, One-Click Ruby Installer for Windows, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=31">Upload a file into a new QuickBase record</a><h3>Keywords</h3>upload file <br><h3>Problem:</h3>You want to create a new record and upload a file into a File Attachment field in the record<br><h3>Solution:</h3><pre>
+require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new( &quot;username&quot;, &quot;password&quot; )
+
+# upload the local file &quot;cookbookfiles.zip&quot; into the 'File Attachment' field in a new record 
+# in the 'Etc.' table in the QuickBase API Cookbook v2
+qbc.uploadFile( &quot;bb2mad4su&quot;, &quot;cookbookfiles.zip&quot;, &quot;File Attachment&quot; )
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="uploadFileIntoNewRecord.rb">uploadFileIntoNewRecord.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=30">Edit data offline in a simple text file</a><h3>Keywords</h3>text file offline<br><h3>Problem:</h3>You want to edit data in simple text file and send the data into to a QuickBase table<br><h3>Solution:</h3><pre>require 'QuickBaseTextData'
+
+# download the Ingredients table in the QuickBase API Cookbook v2 to a text file
+QuickBase::TextData.downloadData(&quot;username&quot;,&quot;password&quot;,&quot;bb2mad4ss&quot;)
+
+=begin 
+
+The 'downloadData' line above will write a file called 'downloadedTextData.txt' in your current directory.
+The contents will be something close to the text below. You can edit the text and send it back to QuickBase
+using QuickBase::TextData.uploadData(&quot;username&quot;,&quot;password&quot;,&quot;downloadedTextData.txt&quot;)
+
+dbid:bb2mad4ss
+record:1
+Name:Ruby wrapper for QuickBase HTTP API
+Description:This is a Ruby language wrapper for the QuickBase HTTP API. It includes routines for all everything in the API, plus additional routines to reduce the amount of code you have to write to get things done using the QuickBase API.
+File Attachment:
+URL:https://www.quickbase.com/db/8emtadvk?a=dr&amp;r=ztj&amp;rl=cjtm
+Contact E-mail:
+record:2
+Name:QuickBase HTTP API
+Description:
+File Attachment:
+URL:https://www.quickbase.com/up/6mztyxu8/g/rc7/en/va/QuickBaseAPI.htm
+Contact E-mail:
+record:3
+Name:One-Click Ruby Installer for Windows
+Description:This is a [one-click, self-contained Windows installer] that contains the Ruby language itself, dozens of popular extensions and packages, a syntax-highlighting editor and execution environment, and a Windows help file that contains the full text of the book, Programming Ruby: The Pragmatic Programmer's Guide. 
+File Attachment:
+URL:http://rubyinstaller.rubyforge.org/wiki/wiki.pl
+Contact E-mail:
+record:4
+Name:Visual Basic SDK
+Description:
+File Attachment:
+URL:https://www.quickbase.com/db/6mztyxu8?a=dr&amp;r=c4
+Contact E-mail:
+record:5
+Name:Perl SDK
+Description:
+File Attachment:
+URL:https://www.quickbase.com/db/6mztyxu8?a=dr&amp;r=c5
+Contact E-mail:
+record:6
+Name:Javascript SDK
+Description:
+File Attachment:
+URL:https://www.quickbase.com/db/6mztyxu8?a=dr&amp;r=c8
+Contact E-mail:
+record:7
+Name:Java SDK
+Description:
+File Attachment:
+URL:https://www.quickbase.com/db/6mztyxu8?a=dr&amp;r=c6
+Contact E-mail:
+record:8
+Name:Excel
+Description:
+File Attachment:
+URL:
+Contact E-mail:
+
+
+=end
+</pre><br><h3>Discussion:</h3>QuickBaseTextData.rb comes with the Ruby API for QuickBase.  The file format it reads and writes is simpler than XML and more readable than CSV. It is suitable for editing small-to-medium amounts of data manually and as an intermediate format that applications can use to send data to QuickBase.<br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="downloadToTextFile.rb">downloadToTextFile.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=29">Add simple records 'offline' by entering a field in a dialog box</a><h3>Keywords</h3>offline field entry dialog<br><h3>Problem:</h3>You want to add records by typing into a dialog box and pressing Enter, rather than using a browser.  You want to be able to do this while disconnected from the internet, but have the data go into QuickBase next the time you connect.<br><h3>Solution:</h3><pre>Enter this command at an operating system command-line prompt:-
+
+ruby runOfflineFieldEntryDialog.rb username password dbid FieldName
+
+Of course 'username' and 'password' should be your actual QuickBase username and password. 'dbid' should be the id of the table you want to add records to. 'FieldName' should be the name of a text field in that table.  Your table should allow records to be added by entering just the 'FieldName' field.
+</pre><br><h3>Discussion:</h3>This is very useful for adding records quickly to a table with the least possible amount of typing or clicking and the least possible amount of your screen being occupied for input fields.  It is perfect for adding items to a To-Do list table.  
+
+This dialog box works on any operating system that supports Ruby. The dialog box includes a button to launch QuickBase in your default browser and display your table.
+<br><h3>See Also:</h3>QuickBaseTextData.rb<br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=28">Add simple records by entering a field in a dialog box</a><h3>Keywords</h3>field entry dialog<br><h3>Problem:</h3>You want to add records by typing into a dialog box and pressing Enter, rather than using a browser.<br><h3>Solution:</h3><pre>Enter this command at an operating system command-line prompt:-
+
+ruby runFieldEntryDialog.rb username password dbid FieldName
+
+Of course 'username' and 'password' should be your actual QuickBase username and password. 'dbid' should be the id of the table you want to add records to. 'FieldName' should be the name of a text field in that table.  Your table should allow records to be added by entering just the 'FieldName' field.
+</pre><br><h3>Discussion:</h3>This is very useful for adding records quickly to a table with the least possible amount of typing or clicking and the least possible amount of your screen being occupied for input fields.  It is perfect for adding items to a To-Do list table.  
+
+This dialog box works on any operating system that supports Ruby. The dialog box includes a button to launch QuickBase in your default browser and display your table.
+<br><h3>See Also:</h3><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=27">Show a message when records are added or modified</a><h3>Keywords</h3>add change event notification<br><h3>Problem:</h3>You want to be notified in a message box when a record is added or modified in a table<br><h3>Solution:</h3><pre>
+require 'QuickBaseEventNotifier'
+
+# show a message when a record is added or modified in the QuickBase Community Forum
+QuickBase::EventNotifier.watch(&quot;username&quot;,&quot;password&quot;,&quot;bbqm84dzy&quot;) 
+</pre><br><h3>Discussion:</h3>QuickBaseEventNotifier.rb comes with the Ruby API for QuickBase. This class maintains a list of QuickBase table changes to watch for, how to be notified of the changes, how frequently to check for the changes and when to start and stop checking.  It can stop checking after a specific number of checks, or stop checking after a specific number of successful checks. It can also check for records changes that only meet certain conditions. It can run also any Ruby code when an event occurs.  It can be used as a simple alternative to email notifications from QuickBase.
+
+The above example will check the QuickBase Community Forum every minute for new or modifed records. If a record is added or modifed, it will display a message informing you of the event and a button to launch the QuickBase Community Forum in your default browser.
+<br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="watchCommunityForum.rb">watchCommunityForum.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=25">Download a file from QuickBase</a><h3>Keywords</h3>download file<br><h3>Problem:</h3>You want to download a file from a particular File Attachment field in a particular record and table<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new
+
+# download the QuickBaseClient.rb.zip from record 24105 in the QuickBase Community Forum
+# '41' is the field ID of the File Attachment field
+qbc.downLoadFile(&quot;8emtadvk&quot;, &quot;24105&quot;, &quot;41&quot; )
+
+# have to write the downloaded data before it exists on your local disk
+File.open( &quot;The.Latest.QuickBaseClient.rb.zip&quot;, &quot;wb&quot; ){|f|f.write(qbc.fileContents)}
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="downloadFile.rb">downloadFile.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=24">Loop through records and fields returned by a query</a><h3>Keywords</h3>loop record field query<br><h3>Problem:</h3>You need to loop through the records and fields returned from a query without having to know what fields to expect<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+# change &quot;username&quot; &quot;password&quot; to your QuickBase username and password
+qbc =  QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;)
+
+qbc.doQuery(&quot;6ewwzuuj&quot;)
+
+puts &quot;\n --- QuickBase Formula Functions Reference ---\n\n&quot;
+
+recordNumber = 1
+qbc.eachRecord(qbc.records){|record|
+   puts &quot;\n --- Record #{recordNumber} ---&quot;
+   recordNumber += 1
+   qbc.eachField(record){|field|
+      print qbc.lookupFieldNameFromID(field.attributes[&quot;id&quot;])
+      print &quot;: &quot;
+      if field.has_text?
+         text =  field.text.dup
+         text.gsub!(&quot;
+&quot;,&quot;\n&quot;) if text.include?(&quot;
+&quot;)
+         puts text 
+      end
+   }
+}
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="recordAndFieldIterator.rb">recordAndFieldIterator.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=23">Get records owned by a particular person</a><h3>Keywords</h3>record owner query find<br><h3>Problem:</h3><br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+# change &quot;username&quot; &quot;password&quot; to your QuickBase username and password
+qbc =  QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;)
+
+communityForumRecords = qbc.getAllValuesForFields(&quot;8emtadvk&quot;,[&quot;Subject&quot;,&quot;Message&quot;],&quot;{'4'.CT.', John'}&quot;,nil,nil,&quot;6.10&quot;,nil,&quot;structured&quot;,&quot;num-10&quot;)
+
+puts &quot;\n --- Ten most recent QuickBase Community Forum Records owned by ', John' ---\n\n&quot;
+
+numRecords = communityForumRecords[&quot;Subject&quot;].length
+(0..(numRecords-1)).each{|index|
+   print &quot;\n#{index+1})\nSubject: &quot;
+   print communityForumRecords[&quot;Subject&quot;][index]
+   puts &quot;\nMessage:&quot;
+   puts communityForumRecords[&quot;Message&quot;][index].gsub!(&quot;
+&quot;,&quot;\n&quot;)
+}
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="findJohnsLast10Records.rb">findJohnsLast10Records.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=22">Get records containing a certain value</a><h3>Keywords</h3>find query value<br><h3>Problem:</h3>You want a list of records containing a particular value in any field.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+# change &quot;username&quot; &quot;password&quot; to your QuickBase username and password
+qbc =  QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;)
+
+communityForumRecords = qbc.getAllValuesForFields(&quot;8emtadvk&quot;,[&quot;Subject&quot;,&quot;Message&quot;],&quot;{'0'.CT.'ruby'}&quot;,nil,nil,&quot;6.10&quot;)
+
+puts &quot;\n --- QuickBase Community Forum Records containing the word 'ruby' ---\n\n&quot;
+
+numRecords = communityForumRecords[&quot;Subject&quot;].length
+(0..(numRecords-1)).each{|index|
+   print &quot;\nSubject: &quot;
+   print communityForumRecords[&quot;Subject&quot;][index]
+   puts &quot;\nMessage:&quot;
+   puts communityForumRecords[&quot;Message&quot;][index].gsub!(&quot;
+&quot;,&quot;\n&quot;)
+}
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3>getAllValuesForFields<br><h3>File Attachment:</h3><a href="findRubyRecords.rb">findRubyRecords.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=21">Get records added today</a><h3>Keywords</h3>query added today<br><h3>Problem:</h3>You need to get a list of records added today<br><h3>Solution:</h3><pre>
+require 'QuickBaseClient'
+require 'Date'
+
+# change &quot;username&quot; &quot;password&quot; to your QuickBase username and password
+qbc =  QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;)
+
+today = Date.today
+today = today.strftime(&quot;%m-%d-%Y&quot;)
+communityForumRecords = qbc.getAllValuesForFields(&quot;8emtadvk&quot;,[&quot;Subject&quot;,&quot;Message&quot;],&quot;{'1'.EX.'#{today}'}&quot;,nil,nil,&quot;6.10&quot;)
+
+puts &quot;\n --- QuickBase Community Forum Records added today ---\n\n&quot;
+
+numRecords = communityForumRecords[&quot;Subject&quot;].length
+(0..(numRecords-1)).each{|index|
+   print &quot;\nSubject: &quot;
+   print communityForumRecords[&quot;Subject&quot;][index]
+   puts &quot;\nMessage:&quot;
+   puts communityForumRecords[&quot;Message&quot;][index].gsub!(&quot;
+&quot;,&quot;\n&quot;)
+}
+</pre><br><h3>Discussion:</h3>These are the important parts:
+
+today = Date.today
+today = today.strftime(&quot;%m-%d-%Y&quot;)
+
+&quot;{'1'.EX.'#{today}'}&quot;
+
+<br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="getRecordsAddedToday.rb">getRecordsAddedToday.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=20">Get records in an array rather than XML</a><h3>Keywords</h3>record array loop<br><h3>Problem:</h3>You need to get records in an array that you can loop through <br><h3>Solution:</h3><pre>
+require 'QuickBaseClient'
+
+# change &quot;username&quot; &quot;password&quot; to your QuickBase username and password
+qbc =  QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;)
+
+cookbookRecords = qbc.getAllValuesForFields(&quot;bb2mad4sr&quot;,[&quot;Title&quot;,&quot;Keywords&quot;])
+
+puts &quot;\n --- QuickBase API Cookbook v2 ---\n\n&quot;
+
+numRecords = cookbookRecords[&quot;Title&quot;].length
+(0..(numRecords-1)).each{|index|
+   print &quot;Title: &quot;
+   print cookbookRecords[&quot;Title&quot;][index]
+   print &quot;  (Keywords: &quot;
+   print cookbookRecords[&quot;Keywords&quot;][index]
+   puts &quot;)&quot;
+}
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="getAllValuesForFields.rb">getAllValuesForFields.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=19">Format a date value returned from QuickBase</a><h3>Keywords</h3>date format <br><h3>Problem:</h3>You want to format a date returned from a QuickBase API request as a regular date string instead of a number<br><h3>Solution:</h3><pre>
+require 'QuickBaseClient'
+
+# change &quot;username&quot; &quot;password&quot; to your QuickBase username and password
+qbc =  QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;)
+createdFieldValue = qbc.getAllValuesForFields(&quot;8emtadvk&quot;,[&quot;Created&quot;],&quot;{'3'.EX.'24105'}&quot;)
+createdFieldValue = createdFieldValue[&quot;Created&quot;][0]
+formattedCreatedFieldValue  = qbc.formatDate(createdFieldValue)
+puts &quot;Message 24105 in the QuickBase Community Forum was created on #{formattedCreatedFieldValue} (#{createdFieldValue}).&quot;
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3>getAllValuesForFields<br><h3>File Attachment:</h3><a href="formatDate.rb">formatDate.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=18">Get the dbid (database id) of a 'child' table</a><h3>Keywords</h3>id dbid multi child table<br><h3>Problem:</h3>You have to programmatically retrieve the id of a 'child' table in a multi-table application<br><h3>Solution:</h3><pre>
+require 'QuickBaseClient'
+
+# change &quot;username&quot; &quot;password&quot; to your QuickBase username and password
+qbc =  QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;)
+qbc.printRequestsAndResponses=true 
+applicationDBID = qbc.findDBByname(&quot;QuickBase API Cookbook v2&quot;)
+qbc.getSchema(applicationDBID)
+childDBID = qbc.lookupChdbid(&quot;Ingredients&quot;)
+puts &quot;The dbid of the 'Ingredients' table in the QuickBase API Cookbook v2 application is #{childDBID}&quot;
+
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="getChildTableDBID.rb">getChildTableDBID.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=17">Save request and response XML to a log file</a><h3>Keywords</h3>log debug XML<br><h3>Problem:</h3>You need to keep a log of the XML being sent to QuickBase and the XML being returned.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+# change &quot;username&quot; &quot;password&quot; to your QuickBase username and password
+qbc = QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;)
+puts &quot;Logging XML requests and responses in file logfile.csv.&quot;
+qbc.logToFile( &quot;logfile.csv&quot; )
+qbc.getSchema(&quot;8emtadvk&quot;) #QuickBase Community Forum database
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="logRequestAndResponseXML.rb">logRequestAndResponseXML.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=16">Show XML request/response to/from QuickBase</a><h3>Keywords</h3>debugging XML<br><h3>Problem:</h3>You are debugging a QuickBase API script and need to see the XML being sent to QuickBase and being returned from QuickBase.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+# change &quot;username&quot; &quot;password&quot; to your QuickBase username and password
+qbc = QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;)
+qbc.printRequestsAndResponses = true
+puts &quot;Show the XML request and response while getting info about the QuickBase Community Forum database.&quot;
+qbc.getDBInfo(&quot;8emtadvk&quot;)
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="showRequestAndResponseXML.rb">showRequestAndResponseXML.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=13">Get the last time that anything was modified in a table</a><h3>Keywords</h3>table modified<br><h3>Problem:</h3>You want to know the last time that a record or anything in the structure of a table was modified.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+# change &quot;username&quot; &quot;password&quot; to your QuickBase username and password
+qbc = QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;)
+qbc.getDBInfo(&quot;8emtadvk&quot;)
+lastModifiedTimeString = qbc.formatFieldValue(qbc.lastModifiedTime,&quot;timestamp&quot;)
+puts &quot;The last thing modified in the QuickBase Community Forum was at #{lastModifiedTimeString} (#{qbc.lastModifiedTime}).&quot;
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="getLastModTime.rb">getLastModTime.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=14">Get the last time that a record was modified in a table</a><h3>Keywords</h3>record modified<br><h3>Problem:</h3>You want to know the last time a record was modified in a table.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+# change &quot;username&quot; &quot;password&quot; to your QuickBase username and password
+qbc = QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;)
+qbc.getDBInfo(&quot;8emtadvk&quot;)
+lastRecModTimeString = qbc.formatFieldValue(qbc.lastRecModTime,&quot;timestamp&quot;)
+puts &quot;A record was last modified in the QuickBase Community Forum at #{lastRecModTimeString} (#{qbc.lastRecModTime}).&quot;
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="getLastRecModTime.rb">getLastRecModTime.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=15">Get the date and time a table was created</a><h3>Keywords</h3>create time<br><h3>Problem:</h3>You need to know when a table was created<br><h3>Solution:</h3><pre>
+require 'QuickBaseClient'
+
+# change &quot;username&quot; &quot;password&quot; to your QuickBase username and password
+qbc = QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;)
+qbc.getDBInfo(&quot;8emtadvk&quot;)
+createdTimeString = qbc.formatFieldValue(qbc.createdTime,&quot;timestamp&quot;)
+puts &quot;The QuickBase Community Forum was created #{createdTimeString} (#{qbc.createdTime}).&quot;
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="getTimeCreated.rb">getTimeCreated.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=12">Get the number of records in a table</a><h3>Keywords</h3>number records<br><h3>Problem:</h3>You want to get the number of records in a table.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+# change &quot;username&quot; &quot;password&quot; to your QuickBase username and password
+
+qbc =  QuickBase::Client.new(&quot;username&quot;,&quot;password&quot;)
+
+numRecords = qbc.getNumRecords(&quot;8emtadvk&quot;)
+
+puts &quot;There are #{numRecords} in the QuickBase Community Forum database&quot;
+
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="getNumRecords.rb">getNumRecords.rb</a><br><h3>Ingredients:</h3>One-Click Ruby Installer for Windows, Ruby wrapper for QuickBase HTTP API, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=10">Making a backup copy of an application</a><h3>Keywords</h3>backup<br><h3>Problem:</h3>You need a quick way of backing up an application.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new( &quot;my_username&quot;, &quot;my_password&quot;, &quot;my_application&quot; )
+
+# &quot;true&quot; at the end means copy all the data, not just the structure of the database
+qbc.cloneDatabase( qbc.dbid, &quot;my_application_backup&quot;, &quot;backup of my_application&quot;, true )
+
+qbc.signOut
+</pre><br><h3>Discussion:</h3>If you want to have only one backup copy of your application, add a call to qbc.deleteDatabase:
+
+require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new( &quot;my_username&quot;, &quot;my_password&quot;, &quot;my_application&quot; )
+
+# save the dbid of the application
+appdbid = qbc.dbid.dup
+
+qbc.findDBByname( &quot;my_application_backup&quot; )
+if qbc.dbid and qbc.errcode == &quot;0&quot;
+   qbc.deleteDatabase( qbc.dbid )
+end
+
+# &quot;true&quot; at the end means copy all the data, not just the structure of the database
+qbc.cloneDatabase( appdbid, &quot;my_application_backup&quot;, &quot;backup of my_application&quot;, true )
+
+qbc.signOut
+<br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="backupApplication.rb">backupApplication.rb</a><br><h3>Ingredients:</h3>, , <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=2">Automatically upload CSV data into QuickBase</a><h3>Keywords</h3>Upload CSV data<br><h3>Problem:</h3>You have data in a CSV file and want to upload it into a QuickBase table frequently and quickly.<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+#sign into your application using your user name and password
+qbc = QuickBase::Client.new( &quot;my_username&quot;, &quot;my_password&quot;, &quot;my_application&quot; )
+
+# If your application is a multi-table application, switch to the correct target table using lookupChdbid
+qbc.lookupChdbid( &quot;Imported data&quot; )
+
+# delete all the records in the &quot;Imported data&quot; table then
+# import new data from a CSV file. The field names must be at the top of the file.
+
+# Uncomment the following line to make your QuickBase table
+# have the same contents as your CSV file.
+#qbc._purgeRecords
+
+# (change 'ImportedData.csv' to a real file name)
+qbc.importCSVFile( &quot;ImportedData.csv&quot; )
+
+#sign out of QuickBase
+qbc.signOut
+</pre><br><h3>Discussion:</h3>To have this code run automatically every hour, put everything after &quot;require 'QuickBaseClient'&quot; inside this loop block:
+
+loop {
+
+  # code to run every hour goes here...
+ 
+  # use Ruby's sleep method
+  sleep(60*60)
+}
+<br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="uploadCSVData.rb">uploadCSVData.rb</a><br><h3>Ingredients:</h3>Ruby wrapper for QuickBase HTTP API, One-Click Ruby Installer for Windows, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=11">Making multiple copies of a record</a><h3>Keywords</h3>Copy records<br><h3>Problem:</h3>You want a fast way to make multiple copies of a record<br><h3>Solution:</h3><pre>require 'QuickBaseClient'
+
+qbc = QuickBase::Client.new( &quot;my_username&quot;, &quot;my_password&quot;, &quot;my_application&quot; )
+
+# make 6 copies of record 1
+qbc.copyRecord( &quot;1&quot;, 6 )
+
+qbc.signOut
+</pre><br><h3>Discussion:</h3>This will work if my_application is a single-table application.  For a multi-table application, you can use lookupChdbid( tableName ) before the copyRecord call, or if you know the ID of the table you can simply add it as the last parameter to the copyRecord call:-
+
+qbc.copyRecord( &quot;1&quot;, 6, &quot;xxxxxxxxx&quot; )
+<br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="duplicateRecord.rb">duplicateRecord.rb</a><br><h3>Ingredients:</h3>Ruby wrapper for QuickBase HTTP API, One-Click Ruby Installer for Windows, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=7">Run an API script by clicking a web link</a><h3>Keywords</h3>Script URL<br><h3>Problem:</h3>You have written a script and want to run it by clicking a link in a web page.<br><h3>Solution:</h3><pre>1. Modify the qbc.makeCSVFile.qbc file installed with the ruby wrapper and make sure it does what you want by typing:
+ruby QuickBaseClient.rb run qbc.makeCSVFile.qbc
+2. At a prompt, type ruby QuickBaseClient.rb runwebclient
+3. Open a browser and type http://127.0.0.1:2358/qbc/qbc.makeCSVFile.qbc into the Address box. 
+
+&quot;127.0.0.1&quot; tells a browser to look on the user's own machine for a web server. This means that people on different computers would all have to have QuickBaseClient.rb and qbc.makeCSVFile.qbc on their computer, and qbc.makeCSVFile.qbc could do different things for each user. It is more likely that everyone will expect the same behavior when a specific URL is entered or clicked, and that most people will not have QuickBaseClient.rb or Ruby on their computer. To run command files that are on a particular machine:-
+
+1. Find out the IP address or web-accessible name of the machine.
+2. On that machine, type ruby QuickBaseClient.rb runwebclient &lt;IP Address&gt;
+3. In the browser Address box or web page link, use http://&lt;IP Address&gt;:2358/qbc/qbc.makeCSVFile.qbc. 
+
+</pre><br><h3>Discussion:</h3>This solution is for developers who don't have access to a web server.  If you have access to a web server, it makes more sense to run scripts via CGI, servlets, or similar means.<br><h3>See Also:</h3><br><h3>Ingredients:</h3>Ruby wrapper for QuickBase HTTP API, One-Click Ruby Installer for Windows, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=6">Create a daily history of the changes to a table</a><h3>Keywords</h3>Copy records<br><h3>Problem:</h3>You have records in a table and need to track changes to the records over time.<br><h3>Solution:</h3><pre>1) Copy the application using these menus in QuickBase: Go To, Miscellaneous, Copy without Data
+2) From your copy of the application, use the menus in QuickBase to Export the table back to your original application. 
+3) At this point, you should have an empty table in your application that has exactly the same structure as your original table.
+4) In your new table, add a text field that will contain the Record ID# of records from the original table.
+5) You can now modify the script below to copy records from the source table to the target table:
+
+require 'QuickBaseClient'
+require 'Date'
+
+if ARGV.length &lt; 4
+   puts &quot;\n Usage: ruby copyrecords.rb &lt;username&gt; &lt;password&gt; &lt;sourceTableDBID&gt; &lt;targetTableDBID&gt;\n&quot;
+   puts &quot;\n e.g. ruby copyrecords.rb myusername mypassword xxxxxxxxx yyyyyyyyy\n.&quot;
+   puts &quot;\n Adds copies of records from a main table to a history table.&quot;
+   puts &quot;\n This script assumes the field names match between the two tables.\n&quot;
+   exit
+end
+
+qbc = QuickBase::Client.new( ARGV[0], ARGV[1] )
+
+#Uncomment the following line to see the data being sent to QuickBase and returned from QuickBase
+#qbc.printRequestsAndResponses = true 
+
+#fieldNames is the list of fields values you want to copy
+#Change the list to match your real field names.
+
+fieldNames = Array.new
+fieldNames = [ &quot;Record ID#&quot;, &quot;Date Updated&quot;, &quot;Title&quot;, &quot;Description&quot;, &quot;MutipleChoiceField&quot; ]
+
+puts &quot;Adding copies of all source table records to target table&quot;
+
+#fieldValues is a hash of arrays of field values from all records in the source table
+qbc.getSchema( ARGV[2] )
+fieldValues = qbc.getAllValuesForFields( ARGV[2], fieldNames )
+numRecs = fieldValues[ &quot;Record ID#&quot; ].length
+
+#for each record (i) retrieved from the source table...
+(0..numRecs.to_i-1).each{ |i|
+   
+   #clear previously uploaded field values
+   qbc.clearFieldValuePairList
+   
+   #loop through the list of field values for record i
+   fieldValues.each { |fieldName,valueArray|
+   
+       # get the value of fieldName in record i
+       value = valueArray[i]
+       
+       # copy the field name - it will need to be changed for some fields
+       targetFieldName = fieldName.dup
+       
+       # date fields must be converted from the numeric version to a format that can be sent back to QuickBase
+       value = qbc.formatDate( value, nil, true ) if targetFieldName == &quot;Date Updated&quot;
+       
+       # put the source table's Record ID# in a different field in the target table
+       # (you could do this for any field that has a different name in the target table)
+       targetFieldName = &quot;Source Record ID #&quot; if targetFieldName == &quot;Record ID#&quot;
+       
+       # the values of multiple choice fields must be in the list of available choices
+       if targetFieldName == &quot;MutipleChoiceField&quot;  
+          qbc._fieldNameAddChoices( targetFieldName, value ) 
+       end
+       
+       # add the field value to the list of fields to be uploaded to the target table
+       qbc.addFieldValuePair( targetFieldName, nil, nil,  value ) 
+   }
+   
+   puts &quot;Adding record #{i} of #{numRecs.to_i-1}&quot;
+   qbc.addRecord( ARGV[3], qbc.fvlist )
+   
+   # print any error message from QuickBase, if there was one
+   if !qbc.requestSucceeded
+     qbc.printLastError
+   end
+   
+}
+
+# signout of QuickBase
+qbc.signOut
+
+</pre><br><h3>Discussion:</h3><br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="copyrecords.rb">copyrecords.rb</a><br><h3>Ingredients:</h3>Ruby wrapper for QuickBase HTTP API, One-Click Ruby Installer for Windows, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=3">Create records in table 3, using data from tables 1 &amp; 2</a><h3>Keywords</h3>Create records automatically<br><h3>Problem:</h3>You want to create records automatically in a table, using data from a different table.<br><h3>Solution:</h3><pre>
+require 'QuickBaseClient'
+
+#
+# This script reads the list of records from a Documents table and a Doctors table
+# And creates mssing records in a Progress table for all the combinations of Doctors and Documents
+#
+
+# Check the command line for username, password ---------------------
+if ARGV.length == 1 and ARGV[0] == &quot;?&quot;
+   puts &quot;\n\nUsage: ruby makerecs.rb username password\n\nThis program adds records to the Progress table\nfor each record added to the Documents table.\n\n&quot;
+   exit 1 
+elsif ARGV.length &gt; 1
+   username = ARGV[0]
+   password = ARGV[1]
+else
+   puts &quot;\nPlease enter your username and password, e.g.\n\n\truby makerecs.rb fred amliw\n\n&quot;
+   exit 1 
+end
+
+documentsDBID = &quot;xxxxxxxxx&quot; # fictitious!   please use a valid table dbid
+doctorsDBID = &quot;yyyyyyyyy&quot; # fictitious!   please use a valid table dbid
+progressDBID = &quot;zzzzzzzzz&quot; # fictitious!   please use a valid table dbid
+
+# Signin  to QuickBase ----------------------------------------------
+qbc = QuickBase::Client.new( username, password )
+
+# Collect the record IDs from the Documents table -------------------
+documentRids = qbc.getAllRecordIDs( documentsDBID ) #Documents table
+puts &quot;Document IDs = #{documentRids.join( ',' )}&quot;
+
+# Collect the record IDs from the Doctors table ---------------------
+doctorRids = qbc.getAllRecordIDs( doctorsDBID ) #Doctors table
+puts &quot;Doctor IDs = #{doctorRids.join( ',' )}&quot;
+
+# Collect the Document and Doctor IDs from the Progress table -------
+progressIDs = qbc.getAllValuesForFields( progressDBID, [ &quot;DoctorID&quot;, &quot;DocumentID&quot; ] ) # Progress table
+
+puts &quot;Progress Document IDs = #{progressIDs[&quot;DocumentID&quot;].join(',')}&quot;
+puts &quot;Progress Doctor IDs = #{progressIDs[&quot;DoctorID&quot;].join(',')}&quot;
+
+# Collect the Documents that are missing from the Progress table ----------------
+missingProgressDocuments = Array.new
+documentRids.each{ |documentRid| 
+        if not progressIDs[&quot;DocumentID&quot;].include?( documentRid )
+           missingProgressDocuments &lt;&lt; documentRid
+        end
+   }
+
+puts &quot;Missing Progress Document IDs = #{missingProgressDocuments.join(',')}&quot;
+
+# For each missing Document, add a record to the Progress table for each Doctor -
+missingProgressDocuments.each{ |documentRid|
+   doctorRids.each{ |doctorRid|
+      qbc.clearFieldValuePairList
+      qbc.addFieldValuePair( &quot;DocumentID&quot;, nil, nil, documentRid )
+      fieldValueList = qbc.addFieldValuePair( &quot;DoctorID&quot;, nil, nil, doctorRid )
+      qbc.addRecord( progressDBID, fieldValueList )
+   }
+}
+
+# Signout from QuickBase --------------------------------------------
+qbc.signOut
+
+</pre><br><h3>Discussion:</h3>This is just one example solution that may not be precisely what you are looking for.  However, it should be possible to follow the basic logic in this script to address your particular situation.<br><h3>See Also:</h3><br><h3>File Attachment:</h3><a href="makerecs.rb">makerecs.rb</a><br><h3>Ingredients:</h3>Ruby wrapper for QuickBase HTTP API, One-Click Ruby Installer for Windows, <br><h3>Chef:</h3><br><HR><h2><a href="https://www.quickbase.com/db/bcdcajmrg?a=dr&rid=8">Access QuickBase from a command line instead of a browser</a><h3>Keywords</h3>Command line<br><h3>Problem:</h3>You want to query and manipulate QuickBase data from a command line prompt and/or a batch file or script.<br><h3>Solution:</h3><pre>Install ruby and the ruby wrapper. In the folder containing QuickBaseclient.rb, type:
+
+ruby QuickBaseClient.rb run 
+
+The commands available interactively can be entered into a text file and run 'hands-off' using:
+
+ruby QuickBaseClient.rb run &lt;filename&gt;
+
+</pre><br><h3>Discussion:</h3>This command line provides a convenient way to perform simple routines against QuickBase without using a browser. It is especially useful for tasks that have to be done very frequently.  It also helps developers to explore the QuickBase API and debug API scripts.<br><h3>See Also:</h3><br><h3>Ingredients:</h3>Ruby wrapper for QuickBase HTTP API, One-Click Ruby Installer for Windows, <br><h3>Chef:</h3><br><HR></BODY>

@@ -1,0 +1,31 @@
+<h1>Projects + Contacts</h1>
+
+This view shows 'join' records created from the Projects and Contacts tables.
+<br>
+The common field from the two tables is the 'Company' field.
+<br>
+Although there is a relationship in QuickBase between the Projects and Contacts 
+tables, the <i>QuickBase:Client.getJoinRecords</i> method used to build this list of records
+does not depend on that relationship.
+
+<hr>
+
+<table border="1">
+
+   <tr>
+      <% @joinRecords[0].each_key{|fieldName| %>
+         <td><b><%= fieldName %></b></td>
+      <% } %>
+   </tr>
+   
+   <% @joinRecords.each{ |record| %>
+   
+      <tr>
+         <% record.each_value{|value| %>
+            <td><%= value %></td>
+         <% } %>
+      </tr>
+   
+   <% } %>
+
+</table>

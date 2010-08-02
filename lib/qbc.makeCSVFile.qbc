@@ -1,0 +1,4 @@
+signin my_username my_password
+open My QuickBase Database
+exportfile MyCSVFile.csv
+quit

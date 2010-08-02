@@ -1,0 +1,112 @@
+= ipp_quickbase_devkit , ipp_quickbase_devkit_jruby
+
+The ipp_quickbase_devkit is a Ruby client for database applications on 
+http://www.quickbase.com and http://workplace.intuit.com.
+The Intuit Partner Platform (IPP) uses QuickBase applications on http://workplace.intuit.com. 
+
+A separate ipp_quickbase_devkit_jruby exists for JRuby that simplifies installation and setup. 
+
+== Installation 
+
+You will need Ruby version 1.8.6 or higher to use the devkit, or JRuby 1.3.1 or higher.
+
+To install the devkit for regular Ruby, enter: 
+
+==== gem install ipp_quickbase_devkit --source http://code.intuit.com/gems (Note: Location is TBD as of 8/15/09)
+
+
+For JRuby, enter:
+
+==== gem install ipp_quickbase_devkit_jruby --source http://code.intuit.com/gems (Note: Location is TBD as of 8/15/09)
+
+
+To verify that the gem was installed, enter:
+
+==== ruby -e "require 'rubygems' ; require 'QuickBaseCommandLineClient' ; QuickBase::CommandLineClient.new.run"
+
+This will start a command-line interface to www.quickbase.com.
+If you have an account on www.quickbase.com, enter:
+
+==== si <username> <password>
+
+Otherwise, if you have an account on workplace.intuit.com, enter:
+
+==== ruby setHTTPConnectionAndqbhost( true, "workplace", "intuit")
+
+then enter:
+
+==== si <username> <password>
+
+To list the applications you can access, enter:
+
+==== la
+
+To quit the command-line client, enter:
+
+==== q
+
+
+== Getting started
+
+The guts of the Ruby devkit is a wrapper for the QuickBase HTTP API, described here[http://member.developer.intuit.com/MyIDN/technical_resources/quickbase/framework/httpapiref/HTML_API_Programmers_Guide.htm].
+
+Each API call has a matching Ruby method in the wrapper, with parameters and return values that match the API.
+Class QuickBase::Client in the QuickBaseClient.rb file contains these API methods, and numerous additional methods 
+aimed at reducing the effort needed to interact with QuickBase.  QuickBase::Client holds on to the values returned from 
+QuickBase in @member variables.  Check out the (relatively new) QuickBase::Objects if you prefer working with 
+classes that encapsulate the core entities in QuickBase.
+
+By default, QuickBase::Client points at www.quickbase.com.  Since the IPP is on workplace.intuit.com, there
+is a QuickBase::WorkPlaceClient in WorkPlaceClient.rb that points at workplace.intuit.com by default.
+
+Reading the HTTP API and playing with the QuickBase::CommandLineClient is good way to get an idea of how the
+HTTP API works, and how the devkit builds on it.
+
+== Running tests
+
+The unit tests expect that 'rubygems' is required outside of the tests themselves.  To ensure that the tests run, add
+the following to your .profile (or equivalent):
+
+==== export RUBYOPT=-rubygems
+
+Then run 
+
+==== rake spec
+
+to execute the unit tests.
+
+== Example code
+
+The examples/cookbookfiles folder contains about 100 example Ruby source files, with documentation in cookbook 
+form (examples/cookbookfiles/QuickBaseAPICookbook.html).  It is a local version of the QuickBase API CookBook, a 
+public QuickBase application located here[https://www.quickbase.com/db/bcdcajmrf].
+
+== Documentation
+
+Apart from the RDoc documentation (which you are probably looking at), there is older documentation in the
+doc/QuickBaseClient.rb.htm file.  This document was valid until July 2009, and reflects the last 'pre-IPP' version of 
+the devkit, which is still available here[https://www.quickbase.com/db/8emtadvk?a=dr&r=ztj&rl=cjtm].
+
+The doc/quickbase_adapter.rb.htm file describes that Rails adapater for QuickBase, which comes with this devkit.
+A separate Ruby gem will be created for the adapter soon.
+
+== History
+
+The ipp_quickbase_devkit started life in 2005 as a script to generate burndown charts in a Scrum application created
+in QuickBase.  The application is available in the {QuickBase Application Library}[https://www.quickbase.com/db/bbtt9cjr7?a=dr&rid=438]
+and is also visible here[https://www.quickbase.com/db/bcy6rhgvc].
+
+From there it evolved into the {'Ruby Wrapper for the QuickBase HTTP API'}[https://www.quickbase.com/db/8emtadvk?a=dr&r=ztj&rl=cjtm], and
+QuickBase users at numerous companies have found it useful.
+
+In June 2009 it was well positioned to become a component of the Intuit Partner Platform, with some tidying 
+up and improved documentation.
+
+== License
+
+Copyright (c) 2009 Gareth Lewis and Intuit, Inc.
+
+All rights reserved. This program and the accompanying materials
+are made available under the terms of the Eclipse Public License v1.0
+which accompanies this distribution, and is available at
+http://www.opensource.org/licenses/eclipse-1.0.php

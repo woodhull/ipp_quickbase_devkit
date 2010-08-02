@@ -1,0 +1,31 @@
+<h1>Companies</h1>
+
+This view shows 'union' records created from the Projects and Contacts tables.
+<br>
+The result is a list of Companies from both tables.
+<br>
+Although there is a relationship in QuickBase between the Projects and Contacts 
+tables, the <i>QuickBase:Client.getUnionRecords</i> method used to build this list of records
+does not depend on that relationship.
+
+<hr>
+
+<table border="1">
+
+   <tr>
+      <% @unionRecords[0].each_key{|fieldName| %>
+         <td><b><%= fieldName %></b></td>
+      <% } %>
+   </tr>
+   
+   <% @unionRecords.each{|record| %>
+   
+      <tr>
+         <% record.each_value{|value| %>
+            <td><%= value %></td>
+         <% } %>
+      </tr>
+   
+   <% } %>
+
+</table>

@@ -1,0 +1,44 @@
+<h1>Open Projects</h1>
+
+This View shows how to display records using a QuickBase query and Rails methods to retrieve column
+ data.  Note that column names that contain spaces must be accessed using a string.
+ <p>
+ This view also shows the counts of Projects by status in the form of sentences. 
+ This is a basic example of something that is impossible to do within the regular QuickBase UI.  
+
+<hr>
+
+<% statusCount = {}  %>
+
+<table border="1">
+
+   <tr>
+         <td><b>Name</b></td>
+         <td><b>Priority</b></td>
+         <td><b>Status</b></td>
+         <td><b>Estimated Project Start Date</b></td>
+         <td><b>Planned Finish Date</b></td>
+   </tr>
+   
+   <% for project in @projects do %>
+      <tr>
+               <td><%= project.attributes["Project Name"] %></td>
+               <td><%= project.Priority %></td>
+               <td><%= project.Status %></td>
+               <% statusCount[project.Status] ||= 0 %>
+               <% statusCount[project.Status] += 1 %>
+               <td><%= project["Estimated Project Start Date"] %></td>
+               <td><%= project["Planned Finish Date"] %></td>
+      </tr>   
+   <% end %>
+
+</table>
+
+<hr>
+
+<b>
+<% statusCount.each{|key,value| %>
+   <p>The number of <%= key %> projects is <%= value %>. 
+<% } %>
+</b>
+

@@ -1,0 +1,2 @@
+class DocumentLibraryController < ApplicationController
+end

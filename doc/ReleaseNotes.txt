@@ -1,0 +1,43 @@
+06/23/09 - Changed comments to be RDoc-friendly, Split CommandLineClient and webclient into separate files.
+06/12/09 - Added dynamic creation of app,table,field,query,vars,page,role,user objects from QuickBase schemas etc.
+05/16/09 - Added support for dynamic methods and XML response searches.
+12/09/08 - Added 2 more new API calls - getAppDTMInfo and runImport
+05/06/08 - Added methods for new API calls, updated QuickBaseClient.htm.
+03/31/08 - Added QuickBaseTwitterConnector.rb, QuickBaseMisc.rb, getTableName, getTableIDs, getNumTables,
+           getReportNames, iterateRecordInfos, processRESTRequest.
+02/28/08 - Added listDBPages(), iterateDBPages(), getDBPagesAsArray(), obStatus(), getServerStatus().
+02/28/08 - Added addOrEditRecord(), getRecord(). Added optional validateLines parameter to import[C|T]SVFile().
+02/24/08 - Improved formatDuration()
+02/09/08 - Added getApplicationVariable[s]
+01/14/08 - Added org parameter to intialize(), added setHTTPConnection and setHTTPConnectionAndqbhost.
+11/01/07 - Fixed QuickBaseRSSGenerator.rb for Unix case-sensitivity
+10/29/07 - Updated QuickBaseClient.rb.htm help file with recently added methods.
+10/11/07 - Added sample Rails applications
+9/28/07 - Added formatCurrency, formatPercent, moved earlier release notes into .zip file.
+9/25/07 - Fixed various issues with the Rails adapter.
+9/16/07 - Added preliminary QuickBase adapter for Ruby on Rails - more info coming soon.
+8/22/07 - Improved doSQLQuery (getting ready for Rails integration!)
+7/5/07  - Added iterateSummaryRecords and supporting methods.  Loops through records as if they were from a QuickBase Summary report.
+2/13/07 - Added applyPercentToRecords, applyDeviationToRecords. Set each record's percentage of a field's total, deviation from a field's average, for all records in a query.
+2/10/07 - Added iterateFilteredRecords to QuickBaseClient.rb. Filter records using regular expressions, .e.g. 'Name' starts with 'A' through 'E' .
+2/9/07 - Added min,max,sum,count,average to QuickBaseClient.rb. Applies to one or more fields from the records returned from a query.
+2/8/07 - Added iterateUnionRecords to QuickBaseClient.rb.  Loops through records merged from multiple tables using common fields, like SQL UNION.
+2/7/07 - Added iterateJoinRecords to QuickBaseClient.rb.  Loops through records from multiple tables joined into logical records using common values, like SQL JOIN.
+2/4/07 - Added getFieldChoices to QuickBaseClient.rb. Returns an array of choices for a multiple-choice text field.
+2/3/07 - Added iterateRecords to QuickBaseClient.rb.  Simplest way to process records returned by queries.
+2/3/07 - Added editRecords to QuickBaseClient.rb; modify fields in all records matching a query.
+2/2/07 - Added replaceFieldValuePair to QuickBaseClient.rb.  Good for adding multiple records that vary by one field value.
+1/27/07 - Added QuickBaseEmailer.rb.  Email QuickBase data using SMTP.
+1/27/07 - Fixed runOfflineFieldEntryDialog.rb problem.
+1/21/07 - Added keyboard shortcut keys for run[Offline]FieldEntryDialog.rb
+1/10/07 - Added runOfflineFieldEntryDialog.rb. Same as above, but if not connected to QuickBase, data is cached locally and sent to QuickBase at the next opportunity.
+1/7/07 - Added runFieldEntryDialog.rb. Add records from a one-field text entry dialog.  Uses the cross-platform Tk UI library that comes with Ruby.
+1/5/07    - Added QuickBaseEventNotifier.rb. Display messages or run Ruby code when records are added/modified/deleted from QuickBase tables.
+12/31/06 - Fixed errors in QuickBaseTextData.rb.
+12/24/06 - Added QuickBaseTextData.rb. Send/retrieve data in yaml-like format.
+11/3/06   - Fixed error in testQuickBaseClient()
+9/8/06   - Added QuickBaseRSSGenerator.rb file; this can be used to merge data from multiple QuickBase tables into one RSS Feed.
+9/4/06   - Added eachRecord() and eachField()
+7/5/06   - Added Brandon N's fixes for makeSVFile - THANKS Brandon!
+2/13/06 - Added more stuff to the help file.
+2/6/06   - Added direct import from Excel into a QuickBase table.

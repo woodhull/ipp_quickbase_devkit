@@ -1,0 +1,33 @@
+<h1>All Projects</h1>
+
+This View shows how to display records using the names of QuickBase queries and fields.
+<p>
+Queries defined in the QuickBase UI (i.e. 'Table' Reports) include filtering and sorting criteria and the list of columns to display. 
+The list of @projects is retrieved from QuickBase using <i>find_by_sql("All Projects")</i> in the <i>projects.rb</i> model class.
+The list of fields in the QuickBase 'All Projects' report is retrieved using <i>reportFields = connection.raw_connection.clist.split('.')</i>
+in the <i>projects.rb</i> model class, and controls the list of columns displayed below using <i>column.quickBaseFieldAttributes["quickBaseFieldId"]</i>.
+<p>
+See the <i>QuickBaseColumn</i> class in quickbase_adapter.rb to understand how this works.
+<hr>
+
+<table border="1">
+
+   <tr>
+   <% Projects.columns.each { |column| %>
+      <% if @reportColumns.include?(column.quickBaseFieldAttributes["quickBaseFieldId"]) %>
+         <td><b><%= column.human_name %></b></td>
+      <% end %>
+   <% } %>
+   </tr>
+   
+   <% for project in @projects do %>
+      <tr>
+         <% Projects.columns.each { |column| %>
+            <% if @reportColumns.include?(column.quickBaseFieldAttributes["quickBaseFieldId"]) %>
+               <td><%= project[column.human_name] %></td>
+            <% end %>
+         <% } %>
+      </tr>   
+   <% end %>
+
+</table>

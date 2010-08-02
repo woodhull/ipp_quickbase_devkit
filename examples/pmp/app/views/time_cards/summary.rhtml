@@ -1,0 +1,38 @@
+<h1>Time Cards</h1>
+
+
+<hr>
+
+<% fieldList = Array["Project Name","Week Starting On","Sun","Mon","Tue","Wed","Thu","Fri","Sat","Weekly Total"] %>
+<% totalFieldList = Array["Sun","Mon","Tue","Wed","Thu","Fri","Sat","Weekly Total"] %>
+<% totals = {} %>
+<% totalFieldList.each {|fieldName| totals[fieldName] = 0} %>
+
+<table border="1">
+   
+   <tr>
+      <% fieldList.each {|fieldName| %>
+         <td><b><%= fieldName %></b></td>
+      <% } %>
+   </tr>
+
+   <% for rec in @time_cards do %>
+      <tr>
+         <% fieldList.each {|fieldName| %>
+            <td><%= rec[fieldName] %></td>
+         <% } %>
+      </tr>
+      <% totalFieldList.each {|fieldName| totals[fieldName] += rec[fieldName].to_i } %>
+   <% end %>   
+   
+   <tr>
+      <% fieldList.each {|fieldName| %>
+         <%  if totalFieldList.include?(fieldName) %>
+                  <td><b><%= totals[fieldName] %></b></td>
+         <%  else %>
+                  <td></td>
+         <%  end %>
+      <% } %>
+   </tr>
+
+</table>

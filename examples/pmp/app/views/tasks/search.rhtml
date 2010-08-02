@@ -1,0 +1,23 @@
+<h1>Tasks: find all records for which any field contains '<%= params[:s] %>'</h1>
+
+This View shows how to search QuickBase records using the query language in the QuickBase HTTP API.
+<hr>
+
+<% fieldNames = Array["Project Name","Project Phase","Task Name","Milestone","Duration", "Start","Calculated Finish Date","Actual Finish Date","Days Overdue","% Complete","Status","Priority"] %>
+
+<table border="1">
+<tr>
+   <% fieldNames.each{|fieldName| %>
+      <td><b><%= fieldName %></b></td>
+   <% } %>
+</tr>
+
+<% for task in @tasks do %>
+   <tr>
+      <% fieldNames.each{ |fieldName| %>
+         <td><%= task[fieldName] %></td>
+      <% } %>
+   </tr>
+<% end %>
+
+</table>

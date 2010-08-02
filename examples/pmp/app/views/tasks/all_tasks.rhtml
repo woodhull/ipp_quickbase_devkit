@@ -1,0 +1,27 @@
+<h1>All Tasks</h1>
+
+This View shows how to display records from QuickBase without any model code and without
+ActiveRecord, by using the underlying QuickBase API directly.
+<p>
+It breaks the MVC paradigm, but it's not the end of the world!
+<hr>
+<% fieldNames = Array["Project Phase","Task Name","Duration", "Milestone","Start","Calculated Finish Date","Days Overdue","Status","Priority","% Complete"] %>
+
+<table border="1">
+<tr>
+   <% fieldNames.each{|fieldName| %>
+      <td><b><%= fieldName %></b></td>
+   <% } %>
+</tr>
+
+<% dbid = ActiveRecord::Base.connection.setActiveTable("Tasks") %>
+<% qbClient = ActiveRecord::Base.connection.raw_connection %>
+<% qbClient.iterateRecords(dbid, fieldNames, nil,nil, "All Tasks") { |task| %>
+   <tr>
+      <% fieldNames.each{ |fieldName| %>
+         <td><%= qbClient.formatFieldValue(task[fieldName],qbClient.lookupFieldTypeByName(fieldName)) %></td>
+      <% } %>
+   </tr>
+<% } %>
+
+</table>
