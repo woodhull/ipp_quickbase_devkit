@@ -46,7 +46,7 @@ spec = Gem::Specification.new do |s|
    s.add_development_dependency("rspec", [">= 1.2.7"])
    s.required_ruby_version = ">=1.8.6"
    s.platform = Gem::Platform::RUBY
-   s.files = FileList["LICENSE","README.rdoc","rakefile","examples/**/*.","examples/**/*.*","doc/*.*","lib/*.rb","lib/*.qbc","test/*.rb","test/*.bat"].exclude(".svn").to_a
+   s.files = FileList["LICENSE","README.rdoc","rakefile","examples/**/*.","examples/**/*.*","doc/*.*","lib/*.rb","lib/*.qbc","test/*.rb","test/*.bat","lib/active_record/connection_adapters/*.rb" ].exclude(".svn").to_a
 end 
 
 Rake::GemPackageTask.new(spec).define
