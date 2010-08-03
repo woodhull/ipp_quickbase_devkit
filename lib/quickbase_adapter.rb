@@ -21,18 +21,18 @@ module ActiveRecord
    class Base
       def self.quickbase_connection(config)
          config = config.symbolize_keys
-         username = config[:username] 
-         password = config[:password] 
+
          if config.has_key?(:database)
            database = config[:database]
          else
            raise ArgumentError, "No database specified. Missing argument: database."
          end
+         
          if config[:useWorkPlace]
-           @qbc = QuickBase::WorkPlaceClient.new(username,password)
+           @qbc = QuickBase::WorkPlaceClient.new(config[:username], config[:password])
          else
-           @qbc = QuickBase::Client.init("username" => username, "password" => password, "org" => config[:organization], "apptoken" => config[:token])
-           #@qbc = QuickBase::Client.new(username,password)
+           config = config.stringify_keys
+           @qbc = QuickBase::Client.init(config)
          end  
          if @qbc.findDBByName(database)
             @qbc._getSchema
@@ -208,7 +208,6 @@ module ActiveRecord
          end
          
          def select(sql,name)
-            puts sql
             sql = sql.to_s
             
             if sql.match(/([^:]+)(:)(.+)/)
@@ -235,7 +234,6 @@ module ActiveRecord
                rows = @qbc.getAllValuesForFieldsAsArray(@qbc.dbid,nil,nil,nil,sql)            
                rows.each{|row| row["id"] = row[@id_field_name]} if rows
             end
-            puts rows.inspect
             
             rows
             
